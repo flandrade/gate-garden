@@ -1,0 +1,20 @@
+{
+  "name": "gate-garden",
+  "version": "1.0.0",
+  "description": "A surreal Phaser 3 game set in a Bosch-inspired garden where you are a gatekeeper making decisions about unusual visitors",
+  "main": "./dist/main.js",
+  "scripts": {
+    "dev": "vite --config vite/config.dev.mjs",
+    "build": "vite build --config vite/config.prod.mjs"
+  },
+  "dependencies": {
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vite": "^6.3.1"
+  },
+  "keywords": ["phaser", "game", "typescript", "surreal", "gatekeeper", "vite"],
+  "author": "",
+  "license": "MIT"
+}
