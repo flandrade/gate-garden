@@ -8,13 +8,22 @@
     "build": "vite build --config vite/config.prod.mjs"
   },
   "dependencies": {
+    "dotenv": "^17.2.0",
     "phaser": "^3.90.0"
   },
   "devDependencies": {
+    "terser": "^5.43.1",
     "typescript": "^5.7.2",
     "vite": "^6.3.1"
   },
-  "keywords": ["phaser", "game", "typescript", "surreal", "gatekeeper", "vite"],
+  "keywords": [
+    "phaser",
+    "game",
+    "typescript",
+    "surreal",
+    "gatekeeper",
+    "vite"
+  ],
   "author": "",
   "license": "MIT"
 }

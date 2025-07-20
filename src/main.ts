@@ -1,31 +1,30 @@
 import Phaser from 'phaser';
 import TitleScene from './scenes/TitleScene';
 import GameScene from './scenes/GameScene';
+import FishCatchingScene from './scenes/FishCatchingScene';
+import ElephantSearchScene from './scenes/ElephantSearchScene';
+import CreditScene from './scenes/CreditScene';
 
 // Game state interface
 interface GameState {
-    meters: {
-        health: number;
-        support: number;
-        trust: number;
-        stability: number;
-    };
-    currentDay: number;
-    maxDays: number;
-    visitorsToday: number;
-    maxVisitorsPerDay: number;
+    medals: number; // 0-3 medals earned from puzzles
     gameOver: boolean;
     gameResult: string | null;
+    guardianIntroductionShown: boolean; // Track if guardian intro has been shown
+    elephantSearchShown: boolean; // Track if elephant search has been shown
+    fishCatchingShown: boolean; // Track if fish catching has been shown
+    lastKnownMedals: number; // Track previous medal count for animation detection
 }
 
 // Utility functions interface
 interface GameUtils {
-    updateMeter(meterName: keyof GameState['meters'], change: number): void;
+    awardMedal(meterName: 'elephantSearch' | 'fishCatching'): boolean; // Returns true if medal was awarded
+    resetMedals(): void;
+    canOpenGate(): boolean; // Returns true if user has 2+ medals
     getGameOverReason(meterName: string): string;
-    checkDayLimit(): void;
-    getFinalOutcome(): string;
-    nextDay(): void;
     resetGame(): void;
+    hasShownElephantSearch(): boolean;
+    hasShownFishCatching(): boolean;
 }
 
 // Game configuration
@@ -35,7 +34,7 @@ const config: Phaser.Types.Core.GameConfig = {
     height: 1024,
     parent: 'game-container',
     backgroundColor: '#2c1810',
-    scene: [TitleScene, GameScene],
+    scene: [TitleScene, GameScene, FishCatchingScene, ElephantSearchScene, CreditScene],
     physics: {
         default: 'arcade',
         arcade: {
@@ -54,83 +53,68 @@ const game = new Phaser.Game(config);
 
 // Global game state management
 const gameState: GameState = {
-    meters: {
-        health: 75,      // 🦠 Public Health
-        support: 75,     // 🌺 Support/Economy
-        trust: 75,       // 🗣️ Public Trust/Social Stability
-        stability: 75    // ⚖️ Political Stability/Authority
-    },
-    currentDay: 1,
-    maxDays: 10,
-    visitorsToday: 0,
-    maxVisitorsPerDay: 2,
+    medals: 0, // Start with 0 medals
     gameOver: false,
-    gameResult: null
+    gameResult: null,
+    guardianIntroductionShown: false,
+    elephantSearchShown: false,
+    fishCatchingShown: false,
+    lastKnownMedals: 0
 };
 
 // Utility functions for game state
 const gameUtils: GameUtils = {
-    // Update meters with bounds checking
-    updateMeter(meterName: keyof GameState['meters'], change: number): void {
-        if (gameState.meters[meterName] !== undefined) {
-            gameState.meters[meterName] = Math.max(0, Math.min(100,
-                gameState.meters[meterName] + change));
-
-            // Check for game over conditions
-            if (gameState.meters[meterName] <= 0) {
-                gameState.gameOver = true;
-                gameState.gameResult = this.getGameOverReason(meterName);
+    // Award a medal for completing a puzzle (max 3 medals)
+    awardMedal(meterName: 'elephantSearch' | 'fishCatching'): boolean {
+        if (gameState.medals < 3) {
+            gameState.medals++;
+            if (meterName === 'elephantSearch') {
+                gameState.elephantSearchShown = true;
+            } else if (meterName === 'fishCatching') {
+                gameState.fishCatchingShown = true;
             }
+            return true; // Medal was awarded
         }
+        return false; // Already at max medals
+    },
+
+    // Reset medals to 0
+    resetMedals(): void {
+        gameState.medals = 0;
+    },
+
+    // Check if user has enough medals to open the gate
+    canOpenGate(): boolean {
+        return gameState.medals >= 2;
+    },
+
+    // Check if elephant search has been shown
+    hasShownElephantSearch(): boolean {
+        return gameState.elephantSearchShown;
+    },
+
+    // Check if fish catching has been shown
+    hasShownFishCatching(): boolean {
+        return gameState.fishCatchingShown;
     },
 
     // Determine game over reason based on which meter hit zero
     getGameOverReason(meterName: string): string {
         switch(meterName) {
-            case 'health': return 'plague';
-            case 'support': return 'economic_collapse';
-            case 'trust': return 'rebellion';
-            case 'stability': return 'chaos';
+            case 'medals': return 'medals';
             default: return 'unknown';
         }
     },
 
-    // Check if game should end (day limit reached)
-    checkDayLimit(): void {
-        if (gameState.currentDay > gameState.maxDays) {
-            gameState.gameOver = true;
-            gameState.gameResult = this.getFinalOutcome();
-        }
-    },
-
-    // Determine final outcome based on meter values
-    getFinalOutcome(): string {
-        const { health, support, trust, stability } = gameState.meters;
-
-        // Check for specific endings
-        if (health <= 0) return 'plague';
-        if (trust <= 0 || stability <= 0) return 'rebellion';
-        if (trust < 25 || stability < 25) return 'civil_unrest';
-        if (stability > 80 && trust < 30) return 'despotism';
-        if (health > 40 && support > 40 && trust > 40 && stability > 40) return 'survival';
-
-        return 'uncertain_times';
-    },
-
-    // Advance to next day
-    nextDay(): void {
-        gameState.currentDay++;
-        gameState.visitorsToday = 0;
-        this.checkDayLimit();
-    },
-
     // Reset game state
     resetGame(): void {
-        gameState.meters = { health: 75, support: 75, trust: 75, stability: 75 };
-        gameState.currentDay = 1;
-        gameState.visitorsToday = 0;
+        gameState.medals = 0;
         gameState.gameOver = false;
         gameState.gameResult = null;
+        gameState.guardianIntroductionShown = false;
+        gameState.elephantSearchShown = false;
+        gameState.fishCatchingShown = false;
+        gameState.lastKnownMedals = 0;
     }
 };
 

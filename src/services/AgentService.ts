@@ -1,5 +1,6 @@
-import { getWebhookUrl, isWebhookEnabled } from '../config/agentConfig';
+import {  isWebhookEnabled } from '../utils/webhookConfig';
 
+export let WEBHOOK_AGENT_URL: string | null = (import.meta as any).env.VITE_WEBHOOK_AGENT_URL || null;
 
 // Webhook Service for dynamic content generation
 // This service sends game state to webhook endpoints and receives dynamic responses
@@ -8,20 +9,11 @@ export interface WebhookRequest {
     prompt: string;
     context: {
         gameState: {
-            meters: {
-                health: number;
-                support: number;
-                trust: number;
-                stability: number;
-            };
-            currentDay: number;
-            maxDays: number;
+            medals: number;
         };
         character: string; // 'guardian', 'unicorn', 'elephant', etc.
         previousMessages?: string[];
     };
-    maxTokens?: number;
-    temperature?: number;
 }
 
 export interface WebhookResponse {
@@ -48,8 +40,7 @@ export class WebhookService {
         }
     }
 
-    private async callWebhook(request: WebhookRequest): Promise<string> {
-        const webhookUrl = getWebhookUrl();
+    private async callWebhook(request: WebhookRequest, webhookUrl: string | null = WEBHOOK_AGENT_URL): Promise<string> {
         if (!webhookUrl) throw new Error('No webhook URL provided');
 
         // Prepare the payload to send to webhook
@@ -70,7 +61,6 @@ export class WebhookService {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(payload),
                 signal: controller.signal
@@ -106,14 +96,12 @@ export class WebhookService {
 
         private getFallbackResponse(request: WebhookRequest): WebhookResponse {
         // Fallback responses when webhook is not available
-        const { meters } = request.context.gameState;
+        const { medals } = request.context.gameState;
         const character = request.context.character;
 
         const fallbackMessages = {
             guardian: [
-                "The mystical energies flow around us, Gatekeeper. Each choice you make affects the delicate balance of this realm.",
-                "I sense the weight of your decisions, Gatekeeper. The realm's fate hangs in the balance of your wisdom.",
-                "Listen to the whispers of the ancient ones, Gatekeeper. They guide those who seek true balance."
+                "Listen to the whispers of the ancient ones. They guide those who seek true balance."
             ],
             unicorn: [
                 "The unicorn's horn glows with ancient magic. 'Trust your instincts, Gatekeeper.'",
@@ -159,8 +147,6 @@ export class WebhookService {
                 gameState,
                 character: 'guardian'
             },
-            maxTokens: 100,
-            temperature: 0.8
         };
 
         const response = await this.generateResponse(request);
@@ -175,8 +161,6 @@ export class WebhookService {
                 gameState,
                 character
             },
-            maxTokens: 120,
-            temperature: 0.7
         };
 
         const response = await this.generateResponse(request);

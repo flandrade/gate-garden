@@ -1,20 +1,11 @@
-import { VisitorUtils } from '../data/visitors';
-import { EventUtils, RandomEvent } from '../data/events';
 import MeterPanel from '../ui/MeterPanel';
-import VisitorCard from '../components/VisitorCard';
-import { Visitor } from '../data/visitors';
 import { webhookService } from '../services/AgentService';
+import { TEXT_STYLES } from '../utils/textConfig';
+import { createDialogContainer } from '../utils/dialogs';
 
 export default class GameScene extends Phaser.Scene {
-    private currentVisitors: Visitor[] = [];
-    private currentVisitorCards: VisitorCard[] = [];
-    private isWaitingForDecision: boolean = false;
-    private eventInProgress: boolean = false;
     private meterPanel!: MeterPanel;
-    private dayText!: Phaser.GameObjects.Text;
     private instructionText!: Phaser.GameObjects.Text;
-    private nextDayButton!: Phaser.GameObjects.Text;
-    private eventElements: Phaser.GameObjects.GameObject[] = [];
 
     // New interactive elements
     private guardian!: Phaser.GameObjects.Sprite;
@@ -65,11 +56,12 @@ export default class GameScene extends Phaser.Scene {
     create(): void {
         const { width, height } = this.cameras.main;
 
-        // Initialize game state
-        this.currentVisitors = [];
-        this.currentVisitorCards = [];
-        this.isWaitingForDecision = false;
-        this.eventInProgress = false;
+        // Reset scene state
+        this.conversationActive = false;
+        this.interactiveAnimals = [];
+
+        // Ensure clean input state
+        this.input.removeAllListeners();
 
         // Create background
         this.createBackground();
@@ -77,14 +69,31 @@ export default class GameScene extends Phaser.Scene {
         // Create UI elements
         this.createUI();
 
-        // Create meter panel
-        this.meterPanel = new MeterPanel(this, width - 150, 120);
+                // Create meter panel
+        this.meterPanel = new MeterPanel(this, width - 120, 70);
 
-        // Start the first day
-        this.startNewDay();
+        // Update meter panel to reflect current game state
+        this.meterPanel.updateMeters();
+
+        // Initialize gate state based on current medals
+        this.updateGateState();
+
+                // Check for new medals and show celebration if needed
+        this.checkForNewMedals();
 
         // Fade in effect
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
+        this.cameras.main.fadeIn(5, 0, 0, 0);
+
+        // Start guardian introduction after fade in completes (only on first visit)
+        this.cameras.main.once('camerafadeincomplete', () => {
+            this.time.delayedCall(10, () => {
+                // Only show guardian introduction if it hasn't been shown before
+                if (!window.GameState.guardianIntroductionShown) {
+                    this.showGuardianIntroduction();
+                    window.GameState.guardianIntroductionShown = true;
+                }
+            });
+        });
     }
 
     private createBackground(): void {
@@ -146,9 +155,21 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.cameras.main;
 
         // Create the gate using sprites
-        const gate = this.add.image(width*3/5 + 50, height*2/4, 'gate_closed');
-        gate.setScale(0.7); // Adjust scale as needed
+        const gate = this.add.image(width*1/5 + 100, height*2/5, 'gate_closed');
+        gate.setScale(0.5); // Adjust scale as needed
         gate.setDepth(100); // Ensure gate appears above animals
+
+        // Make gate interactive for when it opens
+        gate.setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => this.handleGateClick())
+            .on('pointerover', () => {
+                if (this.registry.get('gateOpen')) {
+                    gate.setTint(0xFFD700); // Golden highlight when open
+                }
+            })
+            .on('pointerout', () => {
+                gate.clearTint();
+            });
 
         // Store gate reference for later state changes
         this.registry.set('gateSprite', gate);
@@ -156,17 +177,6 @@ export default class GameScene extends Phaser.Scene {
 
         // Create the Guardian of the Gate
         this.createGuardian();
-
-        // Mystical glow around the gate
-        const glow = this.add.circle(width/2, height/2, 160, 0xFFD700, 0.1);
-        this.tweens.add({
-            targets: glow,
-            alpha: 0.2,
-            duration: 3000,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut'
-        });
     }
 
     private toggleGate(shouldOpen: boolean): void {
@@ -246,99 +256,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     private createUI(): void {
-        // Day counter
-        const dayStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '24px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFD700',
-            fontStyle: 'bold',
-            backgroundColor: '#8B4513',
-            padding: { x: 15, y: 8 },
-            shadow: {
-                offsetX: 2,
-                offsetY: 2,
-                color: '#000000',
-                blur: 4,
-                fill: true
-            }
-        };
-
-        this.dayText = this.add.text(30, 30, 'Day 1', dayStyle);
-
-        // Game title
-        const titleStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '28px',
-            fontFamily: 'Georgia, serif',
-            color: '#D2691E',
-            fontStyle: 'bold',
-            align: 'center'
-        };
-
         // Instructions panel
         this.createInstructionsPanel();
-
-        // Next day button (initially hidden)
-        this.createNextDayButton();
     }
 
     private createInstructionsPanel(): void {
         const { width, height } = this.cameras.main;
 
-        const instructionStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '16px',
-            fontFamily: 'Georgia, serif',
-            color: '#CD853F',
-            align: 'center',
-            backgroundColor: '#2F1B14',
-            padding: { x: 15, y: 10 }
-        };
-
         this.instructionText = this.add.text(width/2, height - 50,
-            'Click to speak with the Guardian...', instructionStyle);
+            'Collect medals to open the gate...', TEXT_STYLES.instructions);
         this.instructionText.setOrigin(0.5);
-    }
-
-    private createNextDayButton(): void {
-        const { width, height } = this.cameras.main;
-
-        const buttonStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '18px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFD700',
-            backgroundColor: '#4B0000',
-            padding: { x: 12, y: 6 },
-            shadow: {
-                offsetX: 2,
-                offsetY: 2,
-                color: '#000000',
-                blur: 4,
-                fill: true
-            }
-        };
-
-        this.nextDayButton = this.add.text(width/2, height - 100, 'NEXT DAY', buttonStyle)
-            .setOrigin(0.5)
-            .setVisible(false)
-            .setInteractive({ useHandCursor: true })
-            .on('pointerdown', () => this.advanceToNextDay())
-            .on('pointerover', () => {
-                this.nextDayButton.setStyle({ backgroundColor: '#800000' });
-                this.tweens.add({
-                    targets: this.nextDayButton,
-                    scaleX: 1.1,
-                    scaleY: 1.1,
-                    duration: 150
-                });
-            })
-            .on('pointerout', () => {
-                this.nextDayButton.setStyle({ backgroundColor: '#4B0000' });
-                this.tweens.add({
-                    targets: this.nextDayButton,
-                    scaleX: 1,
-                    scaleY: 1,
-                    duration: 150
-                });
-            });
     }
 
     private createPlaceholderTextures(): void {
@@ -352,287 +279,12 @@ export default class GameScene extends Phaser.Scene {
         graphics.clear();
     }
 
-    private startNewDay(): void {
-        // Update day counter
-        this.dayText.setText(`Day ${window.GameState.currentDay}`);
-
-        // Ensure gate starts closed for the new day
-        this.toggleGate(false);
-
-        // Check for random events first
-        if (EventUtils.shouldTriggerEvent(window.GameState.currentDay)) {
-            this.triggerRandomEvent();
-            return;
-        }
-
-        // Generate daily visitors
-        this.currentVisitors = VisitorUtils.getDailyVisitors();
-        window.GameState.visitorsToday = 0;
-
-        // Display visitors
-        //this.displayVisitors();
-
-        // Update instructions
-        this.instructionText.setText('Click to speak with the Guardian...');
-
-        // Hide next day button
-        this.nextDayButton.setVisible(false);
-    }
-
-    private displayVisitors(): void {
-        const { width, height } = this.cameras.main;
-
-        // Clear any existing visitor cards
-        this.currentVisitorCards.forEach(card => card.destroy());
-        this.currentVisitorCards = [];
-
-        // Create visitor cards
-        const cardPositions = [
-            { x: width/2 - 200, y: height/2 },
-            { x: width/2 + 200, y: height/2 }
-        ];
-
-        this.currentVisitors.forEach((visitor, index) => {
-            const position = cardPositions[index];
-            const card = new VisitorCard(
-                this,
-                position.x,
-                position.y,
-                visitor,
-                (visitorData, decision) => this.handleVisitorDecision(visitorData, decision)
-            );
-
-            this.currentVisitorCards.push(card);
-        });
-
-        this.isWaitingForDecision = true;
-    }
-
-    private handleVisitorDecision(visitorData: Visitor, decision: 'allow' | 'deny'): void {
-        // Store old meter values for animation
-        const oldValues = { ...window.GameState.meters };
-
-        // Open or close gate based on decision
-        this.toggleGate(decision === 'allow');
-
-        // Apply effects based on decision
-        const effects = visitorData.effects[decision];
-
-        Object.entries(effects).forEach(([meter, change]) => {
-            if (change !== 0) {
-                window.GameUtils.updateMeter(meter as keyof typeof window.GameState.meters, change);
-
-                // Animate meter change
-                this.meterPanel.animateMeterChange(meter, oldValues[meter as keyof typeof oldValues], window.GameState.meters[meter as keyof typeof window.GameState.meters]);
-
-                // Show critical warning if meter is very low
-                if (window.GameState.meters[meter as keyof typeof window.GameState.meters] <= 25) {
-                    this.meterPanel.showCriticalWarning(meter);
-                }
-            }
-        });
-
-        // Update visitor count
-        window.GameState.visitorsToday++;
-
-        // Update instructions with decision feedback
-        const decisionText = decision === 'allow' ? 'granted passage' : 'turned away';
-        this.instructionText.setText(`${visitorData.name} was ${decisionText}.`);
-
-        // Remove the visitor card after a delay
-        const cardIndex = this.currentVisitors.indexOf(visitorData);
-        if (cardIndex >= 0 && this.currentVisitorCards[cardIndex]) {
-            this.time.delayedCall(1000, () => {
-                this.currentVisitorCards[cardIndex].removeCard();
-            });
-        }
-
-        // Close gate after visitor passes through (if it was opened)
-        if (decision === 'allow') {
-            this.time.delayedCall(2000, () => {
-                this.toggleGate(false); // Close the gate
-            });
-        }
-
-        // Check if day is complete or game should end
-        this.time.delayedCall(1500, () => {
-            this.checkDayCompletion();
-        });
-    }
-
-    private checkDayCompletion(): void {
-        // Check for game over conditions
-        if (window.GameState.gameOver) {
-            this.endGame();
-            return;
-        }
-
-        // Check if all visitors for the day have been processed
-        if (window.GameState.visitorsToday >= window.GameState.maxVisitorsPerDay) {
-            this.instructionText.setText('The gates close as evening falls...');
-            this.nextDayButton.setVisible(true);
-        }
-    }
-
-    private advanceToNextDay(): void {
-        // Advance game state
-        window.GameUtils.nextDay();
-
-        // Check if game should end due to day limit
-        if (window.GameState.gameOver) {
-            this.endGame();
-            return;
-        }
-
-        // Start new day
-        this.startNewDay();
-    }
-
-    private triggerRandomEvent(): void {
-        this.eventInProgress = true;
-
-        // Get a random event for this day
-        const events = EventUtils.getEventsForDay(window.GameState.currentDay);
-        const event = events.length > 0 ? events[0] : EventUtils.getRandomEvent();
-
-        if (!event) {
-            // No event triggered, proceed with normal day
-            this.eventInProgress = false;
-            this.startNewDay();
-            return;
-        }
-
-        this.displayEventCard(event);
-    }
-
-    private displayEventCard(event: RandomEvent): void {
-        const { width, height } = this.cameras.main;
-
-        // Create event card background
-        const cardWidth = 500;
-        const cardHeight = 400;
-
-        const eventBg = this.add.rectangle(width/2, height/2, cardWidth, cardHeight, 0x4B0082, 0.95);
-        eventBg.setStrokeStyle(3, 0x9370DB);
-
-        // Event title
-        const titleStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '24px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFD700',
-            fontStyle: 'bold',
-            align: 'center'
-        };
-
-        const title = this.add.text(width/2, height/2 - 150, event.name, titleStyle);
-        title.setOrigin(0.5);
-
-        // Event description
-        const descStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '16px',
-            fontFamily: 'Georgia, serif',
-            color: '#E6E6FA',
-            align: 'center',
-            wordWrap: { width: 450 },
-            lineSpacing: 8
-        };
-
-        const description = this.add.text(width/2, height/2 - 50, event.description, descStyle);
-        description.setOrigin(0.5);
-
-        // Create choice buttons
-        this.createEventChoiceButtons(event, width, height);
-
-        // Store event elements for cleanup
-        this.eventElements = [eventBg, title, description];
-    }
-
-    private createEventChoiceButtons(event: RandomEvent, width: number, height: number): void {
-        const buttonStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '14px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFFFFF',
-            backgroundColor: '#4B0082',
-            padding: { x: 10, y: 8 },
-            wordWrap: { width: 200 }
-        };
-
-        event.choices.forEach((choice, index) => {
-            const y = height/2 + 80 + (index * 60);
-
-            const button = this.add.text(width/2, y, choice.text, buttonStyle)
-                .setOrigin(0.5)
-                .setInteractive({ useHandCursor: true })
-                .on('pointerdown', () => this.handleEventChoice(choice))
-                .on('pointerover', () => {
-                    button.setStyle({ backgroundColor: '#9370DB' });
-                    this.tweens.add({
-                        targets: button,
-                        scaleX: 1.05,
-                        scaleY: 1.05,
-                        duration: 150
-                    });
-                })
-                .on('pointerout', () => {
-                    button.setStyle({ backgroundColor: '#4B0082' });
-                    this.tweens.add({
-                        targets: button,
-                        scaleX: 1,
-                        scaleY: 1,
-                        duration: 150
-                    });
-                });
-
-            this.eventElements.push(button);
-        });
-    }
-
-    private handleEventChoice(choice: { text: string; effects: any }): void {
-        // Store old meter values for animation
-        const oldValues = { ...window.GameState.meters };
-
-        // Apply event effects
-        Object.entries(choice.effects).forEach(([meter, change]) => {
-            if (change !== 0) {
-                window.GameUtils.updateMeter(meter as keyof typeof window.GameState.meters, change as number);
-
-                // Animate meter change
-                this.meterPanel.animateMeterChange(meter, oldValues[meter as keyof typeof oldValues], window.GameState.meters[meter as keyof typeof window.GameState.meters]);
-            }
-        });
-
-        // Clean up event elements
-        this.eventElements.forEach(element => {
-            this.tweens.add({
-                targets: element,
-                alpha: 0,
-                duration: 500,
-                onComplete: () => element.destroy()
-            });
-        });
-
-        // Continue with the day after event cleanup
-        this.time.delayedCall(800, () => {
-            this.eventInProgress = false;
-
-            // Check for game over after event
-            if (window.GameState.gameOver) {
-                this.endGame();
-            } else {
-                // Continue with normal day
-                this.currentVisitors = VisitorUtils.getDailyVisitors();
-                window.GameState.visitorsToday = 0;
-                this.displayVisitors();
-            }
-        });
-    }
-
     private createWalkingAnimals(): void {
         const { width, height } = this.cameras.main;
         const leftSide = width * 0.25; // Position animals on the left quarter of the screen
 
-        this.createWalkingAnimal('giraffe', leftSide - 250, height * 0.56, 0.5);
-        this.createWalkingAnimal('elephant', leftSide, height * 0.65, 1.5);
+        this.createWalkingAnimal('giraffe', leftSide + 350, height * 0.56, 0.5);
+        this.createWalkingAnimal('elephant', leftSide + 300, height * 0.65, 1.5);
 
         //this.createWalkingAnimal('dog', leftSide - 150, height * 0.7, 0.65);
 
@@ -665,20 +317,19 @@ export default class GameScene extends Phaser.Scene {
         // Store reference for later updates
         this.interactiveAnimals.push(animal);
 
-        // Calculate gate position (where animals should stop and turn around)
-        const gateX = width * 3/5 - 100; // Stop before reaching the gate area
+        const gateX = width * 4/5; // Stop before reaching the right side of the screen
 
         // Animal-specific walking speeds and behaviors
         const animalConfigs = {
-            'elephant': { walkSpeed: 8000, frameRate: 250, bobRange: 10, pauseChance: 0.15 },
-            'giraffe': { walkSpeed: 8000, frameRate: 250, bobRange: 10, pauseChance: 0.1 },
-            'unicorn': { walkSpeed: 8000, frameRate: 200, bobRange: 15, pauseChance: 0.1 },
+            'elephant': { walkSpeed: 8000, frameRate: 350, bobRange: 10, pauseChance: 0.15 },
+            'giraffe': { walkSpeed: 6000, frameRate: 250, bobRange: 30, pauseChance: 0.15 },
+            'unicorn': { walkSpeed: 8000, frameRate: 200, bobRange: 15, pauseChance: 0.15 },
             'rabbit': { walkSpeed: 6000, frameRate: 150, bobRange: 50, pauseChance: 0.4 },
             'dog': { walkSpeed: 9000, frameRate: 180, bobRange: 10, pauseChance: 0.25 }
         };
 
         const config = animalConfigs[animalType as keyof typeof animalConfigs] ||
-                      { walkSpeed: 10000, frameRate: 250, bobRange: 10, pauseChance: 0.2 };
+                    { walkSpeed: 10000, frameRate: 250, bobRange: 10, pauseChance: 0.2 };
 
         // Create walking animation by alternating between two frames
         let frame = 1;
@@ -762,72 +413,41 @@ export default class GameScene extends Phaser.Scene {
         this.conversationActive = true;
         const { width, height } = this.cameras.main;
 
-        // Create conversation box
-        this.conversationBox = this.add.container(width/2, height/2);
-        this.conversationBox.setDepth(150);
 
-        // Background
-        const bg = this.add.rectangle(0, 0, 600, 300, 0x2F1B14, 0.95);
-        bg.setStrokeStyle(3, 0xFFD700);
-        this.conversationBox.add(bg);
-
-        // Loading text while generating message
-        const loadingText = this.add.text(0, -50, 'The Guardian is gathering wisdom...', {
-            fontSize: '18px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFD700',
-            align: 'center'
-        });
-        loadingText.setOrigin(0.5);
-        this.conversationBox.add(loadingText);
-
-        // Close button
-        const closeButton = this.add.text(0, 100, 'Close', {
-            fontSize: '16px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFFFFF',
-            backgroundColor: '#4B0000',
-            padding: { x: 15, y: 8 }
-        });
-        closeButton.setOrigin(0.5)
-            .setInteractive({ useHandCursor: true })
-            .on('pointerdown', () => this.closeConversation())
-            .on('pointerover', () => {
-                closeButton.setStyle({ backgroundColor: '#800000' });
-            })
-            .on('pointerout', () => {
-                closeButton.setStyle({ backgroundColor: '#4B0000' });
-            });
-        this.conversationBox.add(closeButton);
-
-        // Fade in effect
-        this.conversationBox.setAlpha(0);
-        this.tweens.add({
-            targets: this.conversationBox,
-            alpha: 1,
-            duration: 300,
-            ease: 'Power2'
-        });
+        // Create the dialog container with buttons as children
+        this.conversationBox = createDialogContainer(
+            this,
+            width/2, height/2,  // position
+            600, 250,           // size
+            'The Guardian is gathering wisdom...', // initial loading text
+            [{
+                text: 'Close',
+                callback: () => this.closeConversation()
+            }]
+        );
 
         // Generate guardian message asynchronously
         try {
             const message = await this.getGuardianMessage();
 
-            const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-                fontSize: '18px',
-                fontFamily: 'Georgia, serif',
-                color: '#FFD700',
-                align: 'center',
-                wordWrap: { width: 550 },
-                lineSpacing: 8
-            };
+            // Find and update the text in the container
+            const dialogText = this.conversationBox.list.find(child =>
+                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering wisdom')
+            ) as Phaser.GameObjects.Text;
 
-            // Replace loading text with actual message
-            loadingText.setText(message);
-            loadingText.setStyle(textStyle);
+            if (dialogText) {
+                dialogText.setText(message);
+                dialogText.setStyle(TEXT_STYLES.dialogue);
+            }
         } catch (error) {
             console.error('Failed to get guardian message:', error);
-            loadingText.setText('The Guardian is silent for now...');
+            const dialogText = this.conversationBox.list.find(child =>
+                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering wisdom')
+            ) as Phaser.GameObjects.Text;
+
+            if (dialogText) {
+                dialogText.setText('The Guardian is silent for now...');
+            }
         }
     }
 
@@ -840,170 +460,294 @@ export default class GameScene extends Phaser.Scene {
             onComplete: () => {
                 this.conversationBox.destroy();
                 this.conversationActive = false;
-                this.instructionText.setText('Click to speak with the Guardian...');
             }
         });
     }
 
-    private async getGuardianMessage(): Promise<string> {
-        const { health, support, trust, stability } = window.GameState.meters;
-        const day = window.GameState.currentDay;
-
-        // Try to get webhook-generated message first
-        try {
-            const response = await webhookService.generateResponse({
-                prompt: "Provide guidance to the Gatekeeper about the current state of the realm",
-                context: {
-                    gameState: {
-                        meters: { health, support, trust, stability },
-                        currentDay: day,
-                        maxDays: window.GameState.maxDays
-                    },
-                    character: 'guardian'
-                },
-                maxTokens: 120,
-                temperature: 0.7
-            });
-
-            if (response.success) {
-                return response.text;
-            }
-        } catch (error) {
-            console.warn('Webhook generation failed, using fallback:', error);
-        }
-
-        // Fallback to static messages
-        // Check for critical states first
-        if (health <= 25) {
-            return "The air grows thick with sickness, Gatekeeper. The realm's health wanes like a dying flame. You must act swiftly to restore balance, lest the plague consume all.";
-        }
-        if (trust <= 25) {
-            return "I sense unrest in the hearts of the people, Gatekeeper. Their trust in your judgment falters like leaves in autumn wind. The seeds of rebellion may soon sprout.";
-        }
-        if (stability <= 25) {
-            return "The foundations of order crumble, Gatekeeper. Chaos whispers in the shadows, waiting to claim what remains of your authority. The realm teeters on the edge of anarchy.";
-        }
-        if (support <= 25) {
-            return "Prosperity flees from your lands, Gatekeeper. The people's support dwindles like water in a drought. Without their backing, your rule becomes as fragile as morning frost.";
-        }
-
-        // General advice based on meter balance
-        if (health > 70 && support > 70) {
-            return "The realm flourishes under your watch, Gatekeeper. Health and prosperity dance together like spring blossoms. Yet remember, even the mightiest tree can fall if its roots are weak.";
-        }
-        if (trust > 70 && stability > 70) {
-            return "Order and trust flow through your lands like a gentle river, Gatekeeper. The people believe in your wisdom, and stability reigns. But beware the calm before the storm.";
-        }
-
-        // Day-specific messages
-        if (day === 1) {
-            return "Welcome, new Gatekeeper. I am the Guardian of this mystical realm. The balance of four forces rests in your hands: Health, Support, Trust, and Stability. Choose wisely, for each decision ripples through the fabric of this world.";
-        }
-        if (day >= 8) {
-            return "The end of your trial approaches, Gatekeeper. The realm's fate hangs in the balance. Your choices have shaped this world - now we shall see if wisdom or folly prevails.";
-        }
-
-        // Default message
-        return "The mystical energies flow around us, Gatekeeper. Each choice you make affects the delicate balance of this realm. Listen to the whispers of the animals, for they carry ancient wisdom.";
-    }
-
-        private async handleAnimalInteraction(animalType: string): Promise<void> {
+    private showGuardianIntroduction(): void {
         if (this.conversationActive) return;
 
         this.conversationActive = true;
         const { width, height } = this.cameras.main;
 
-        // Create conversation box
-        this.conversationBox = this.add.container(width/2, height/2);
-        this.conversationBox.setDepth(150);
+        // Mystical introduction text
+        const introText = `Greetings, traveler...
 
-        // Background
-        const bg = this.add.rectangle(0, 0, 500, 250, 0x2F1B14, 0.95);
-        bg.setStrokeStyle(3, 0xFFD700);
-        this.conversationBox.add(bg);
+I am the Guardian of the Ancient Gate, keeper of this mystical passage between realms. The gate before you is sealed by ancient magic, bound by the wisdom of the sacred creatures that roam these grounds.
 
-        // Loading text while generating message
-        const loadingText = this.add.text(0, -30, `The ${animalType} is gathering thoughts...`, {
-            fontSize: '16px',
-            fontFamily: 'Georgia, serif',
-            color: '#E6E6FA',
-            align: 'center'
-        });
-        loadingText.setOrigin(0.5);
-        this.conversationBox.add(loadingText);
+To unlock the gate's secrets, you must seek counsel from the noble animals and earn their sacred medals by solving their mystical puzzles.
 
-        // Close button
-        const closeButton = this.add.text(0, 80, 'Close', {
-            fontSize: '14px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFFFFF',
-            backgroundColor: '#4B0000',
-            padding: { x: 12, y: 6 }
-        });
-        closeButton.setOrigin(0.5)
-            .setInteractive({ useHandCursor: true })
-            .on('pointerdown', () => this.closeConversation())
-            .on('pointerover', () => {
-                closeButton.setStyle({ backgroundColor: '#800000' });
-            })
-            .on('pointerout', () => {
-                closeButton.setStyle({ backgroundColor: '#4B0000' });
-            });
-        this.conversationBox.add(closeButton);
+The path to enlightenment awaits... prove yourself worthy.`;
 
-        // Fade in effect
-        this.conversationBox.setAlpha(0);
+        // Create the dialog container with the button as a child
+        this.conversationBox = createDialogContainer(
+            this,
+            width/2, height/2,  // position
+            650, 600,           // size
+            introText,          // text
+            [{
+                text: 'I accept the challenge',
+                callback: () => this.closeIntroduction()
+            }]
+        );
+
+        // Update instruction text
+        this.instructionText.setText('The Guardian speaks of ancient mysteries...');
+    }
+
+    private closeIntroduction(): void {
         this.tweens.add({
             targets: this.conversationBox,
-            alpha: 1,
+            alpha: 0,
             duration: 300,
-            ease: 'Power2'
+            ease: 'Power2',
+            onComplete: () => {
+                this.conversationBox.destroy();
+                this.conversationActive = false;
+                this.instructionText.setText('Click on the animals to seek their wisdom...');
+            }
         });
+    }
+
+    private async getGuardianMessage(): Promise<string> {
+        const { medals } = window.GameState;
+
+
+            const response = await webhookService.generateResponse({
+                prompt: "Provide guidance to the Gatekeeper about the current state of the realm",
+                context: {
+                    gameState: {
+                        medals
+                    },
+                    character: 'guardian'
+                },
+            });
+
+            if (response.success) {
+                return response.text;
+            }
+
+        return "The Guardian is silent for now...";
+    }
+
+
+        private async handleAnimalInteraction(animalType: string): Promise<void> {
+        if (this.conversationActive) return;
+
+        // Special handling for unicorn - show mystical trial dialog
+        if (animalType === 'unicorn') {
+            this.showUnicornTrialDialog();
+            return;
+        }
+
+        // Special handling for elephant - show memory trial dialog
+        if (animalType === 'elephant') {
+            this.showElephantTrialDialog();
+            return;
+        }
+
+        this.conversationActive = true;
+        const { width, height } = this.cameras.main;
+
+        // Create the dialog container with close button as child
+        this.conversationBox = createDialogContainer(
+            this,
+            width/2, height/2,  // position
+            500, 250,           // size
+            `The ${animalType} is gathering thoughts...`, // initial loading text
+            [{
+                text: 'Close',
+                callback: () => this.closeConversation()
+            }]
+        );
 
         // Generate animal message asynchronously
         try {
             const message = await this.getAnimalMessage(animalType);
 
-            const textStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-                fontSize: '16px',
-                fontFamily: 'Georgia, serif',
-                color: '#E6E6FA',
-                align: 'center',
-                wordWrap: { width: 450 },
-                lineSpacing: 6
-            };
+            // Find and update the text in the container
+            const dialogText = this.conversationBox.list.find(child =>
+                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering thoughts')
+            ) as Phaser.GameObjects.Text;
 
-            // Replace loading text with actual message
-            loadingText.setText(message);
-            loadingText.setStyle(textStyle);
+            if (dialogText) {
+                dialogText.setText(message);
+                dialogText.setStyle(TEXT_STYLES.dialogue);
+            }
         } catch (error) {
             console.error('Failed to get animal message:', error);
-            loadingText.setText(`The ${animalType} is silent for now...`);
+            const dialogText = this.conversationBox.list.find(child =>
+                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering thoughts')
+            ) as Phaser.GameObjects.Text;
+
+            if (dialogText) {
+                dialogText.setText(`The ${animalType} is silent for now...`);
+            }
         }
     }
 
+    private showUnicornTrialDialog(): void {
+        if (this.conversationActive) return;
+
+        this.conversationActive = true;
+        const { width, height } = this.cameras.main;
+
+        // Check if fish catching trial has already been completed
+        if (window.GameUtils.hasShownFishCatching()) {
+            // Show completion message instead
+            const completionText = `The waters remember your triumph.
+
+You have already proven yourself worthy in the trial of falling truths.`;
+
+            this.conversationBox = createDialogContainer(
+                this,
+                width/2, height/2,  // position
+                600, 300,           // size
+                completionText,     // text
+                [{
+                    text: 'Thank you, wise unicorn',
+                    callback: () => this.closeConversation()
+                }]
+            );
+
+            this.instructionText.setText('The unicorn remembers your completed trial...');
+            return;
+        }
+
+        // Mystical trial text
+        const trialText = `The waters above whisper your trial.
+
+Will you gather what falls from the dreaming sky?`;
+
+        // Create the dialog container with buttons as children
+        this.conversationBox = createDialogContainer(
+            this,
+            width/2, height/2,  // position
+            600, 400,           // size
+            trialText,          // text
+            [{
+                text: 'Catch the falling truths',
+                callback: () => this.startFishCatchingTrial()
+            }, {
+                text: 'Not yet',
+                callback: () => this.closeConversation()
+            }]
+        );
+
+        // Update instruction text
+        this.instructionText.setText('The unicorn offers a mystical trial...');
+    }
+
+    private startFishCatchingTrial(): void {
+        // Close the dialog
+        this.tweens.add({
+            targets: this.conversationBox,
+            alpha: 0,
+            duration: 300,
+            ease: 'Power2',
+            onComplete: () => {
+                this.conversationBox.destroy();
+                this.conversationActive = false;
+
+                // Fade out and transition to fish catching scene
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('FishCatchingScene');
+                });
+            }
+        });
+    }
+
+    private showElephantTrialDialog(): void {
+        if (this.conversationActive) return;
+
+        this.conversationActive = true;
+        const { width, height } = this.cameras.main;
+
+        // Check if elephant search trial has already been completed
+        if (window.GameUtils.hasShownElephantSearch()) {
+            // Show completion message instead
+            const completionText = `Memory eternal holds your achievement.
+
+You have already mastered the trial of hidden sight within The Garden of Earthly Delights.`;
+
+            this.conversationBox = createDialogContainer(
+                this,
+                width/2, height/2,  // position
+                600, 300,           // size
+                completionText,     // text
+                [{
+                    text: 'Thank you, wise elephant',
+                    callback: () => this.closeConversation()
+                }]
+            );
+
+            this.instructionText.setText('The elephant remembers your completed trial...');
+            return;
+        }
+
+        // Memory trial text
+        const trialText = `Memory holds the key to all wisdom.
+
+Can you find what is hidden in plain sight?`;
+
+        // Create the dialog container with buttons as children
+        this.conversationBox = createDialogContainer(
+            this,
+            width/2, height/2,  // position
+            600, 400,           // size
+            trialText,          // text
+            [{
+                text: 'Test my memory',
+                callback: () => this.startElephantSearchTrial()
+            }, {
+                text: 'Not yet',
+                callback: () => this.closeConversation()
+            }]
+        );
+
+        // Update instruction text
+        this.instructionText.setText('The elephant offers a trial of memory...');
+    }
+
+    private startElephantSearchTrial(): void {
+        // Close the dialog
+        this.tweens.add({
+            targets: this.conversationBox,
+            alpha: 0,
+            duration: 300,
+            ease: 'Power2',
+            onComplete: () => {
+                this.conversationBox.destroy();
+                this.conversationActive = false;
+
+                // Fade out and transition to elephant search scene
+                this.cameras.main.fadeOut(500, 0, 0, 0);
+                this.cameras.main.once('camerafadeoutcomplete', () => {
+                    this.scene.start('ElephantSearchScene');
+                });
+            }
+        });
+    }
+
         private async getAnimalMessage(animalType: string): Promise<string> {
-        const { health, support, trust, stability } = window.GameState.meters;
+        const { medals } = window.GameState;
 
             const response = await webhookService.generateResponse({
                 prompt: `Provide wisdom and guidance to the Gatekeeper as a ${animalType}`,
                 context: {
                     gameState: {
-                        meters: { health, support, trust, stability },
-                        currentDay: window.GameState.currentDay,
-                        maxDays: window.GameState.maxDays
+                        medals
                     },
                     character: animalType
                 },
-                maxTokens: 100,
-                temperature: 0.8
             });
 
         if (response.success) {
             return response.text;
         }
 
-        return response.text;
+        return "The animal is silent for now...";
     }
 
     private endGame(): void {
@@ -1017,42 +761,103 @@ export default class GameScene extends Phaser.Scene {
     update(): void {
         // Update meter panel
         this.meterPanel.updateMeters();
-
-        // Update animal behaviors based on meter states
-        this.updateAnimalBehaviors();
-
-        // Any ongoing animations or state checks can go here
     }
 
-    private updateAnimalBehaviors(): void {
-        const { health, support, trust, stability } = window.GameState.meters;
+    // Method to update gate state based on medals
+    updateGateState(): void {
+        const canOpen = window.GameUtils.canOpenGate();
+        this.toggleGate(canOpen);
 
-        // Update unicorn visibility based on trust
-        const unicorn = this.interactiveAnimals.find(animal =>
-            animal.texture.key === 'unicorn_1' || animal.texture.key === 'unicorn_2'
-        );
-        if (unicorn) {
-            if (trust <= 20) {
-                unicorn.setAlpha(0.3);
-            } else if (trust >= 80) {
-                unicorn.setAlpha(1);
-                unicorn.setTint(0xFFFF00); // Golden glow when trust is high
-            } else {
-                unicorn.setAlpha(0.7);
-                unicorn.clearTint();
-            }
+        // Update instruction text
+        if (canOpen) {
+            this.instructionText.setText('Gate is now open! Click to enter The Garden of Earthly Delights...');
+        } else {
+            this.instructionText.setText('Collect more medals to open the gate...');
+        }
+    }
+
+    // Handle gate click when it's open
+    private handleGateClick(): void {
+        const isGateOpen = this.registry.get('gateOpen');
+
+        if (isGateOpen && window.GameUtils.canOpenGate()) {
+            // Transition to Credit Scene
+            this.cameras.main.fadeOut(1000, 0, 0, 0);
+            this.cameras.main.once('camerafadeoutcomplete', () => {
+                this.scene.start('CreditScene');
+            });
+        }
+    }
+
+            // Check for new medals when returning to GameScene
+    private checkForNewMedals(): void {
+        const currentMedals = window.GameState.medals;
+        const lastKnownMedals = window.GameState.lastKnownMedals;
+
+        if (currentMedals > lastKnownMedals) {
+            // New medal earned! Trigger animation
+            this.meterPanel.animateMedalGain(currentMedals);
+        } else {
+            // No new medals, just update the display
+            this.meterPanel.updateMeters();
         }
 
-        // Update rabbit behavior based on health
-        const rabbit = this.interactiveAnimals.find(animal =>
-            animal.texture.key === 'rabbit_1' || animal.texture.key === 'rabbit_2'
-        );
-        if (rabbit) {
-            if (health <= 30) {
-                rabbit.setScale(rabbit.scaleX * 0.8); // Shrinks when health is low
-            } else if (health >= 80) {
-                rabbit.setScale(rabbit.scaleX * 1.2); // Grows when health is high
-            }
+        // Always update the last known count for future comparisons
+        window.GameState.lastKnownMedals = currentMedals;
+    }
+
+    shutdown(): void {
+        // Clean up conversation state
+        this.conversationActive = false;
+
+        // Clean up conversation box if active
+        if (this.conversationBox && this.conversationBox.active) {
+            this.conversationBox.destroy();
+            this.conversationBox = null!;
         }
+
+        // Clean up guardian
+        if (this.guardian) {
+            this.guardian.destroy();
+            this.guardian = null!;
+        }
+
+        // Clean up interactive animals and their event listeners
+        this.interactiveAnimals.forEach(animal => {
+            if (animal && animal.active) {
+                animal.off('pointerdown');
+                animal.off('pointerover');
+                animal.off('pointerout');
+                animal.destroy();
+            }
+        });
+        this.interactiveAnimals = [];
+
+        // Clean up UI elements
+        if (this.instructionText) {
+            this.instructionText.destroy();
+            this.instructionText = null!;
+        }
+
+        if (this.meterPanel) {
+            this.meterPanel.destroy();
+            this.meterPanel = null!;
+        }
+
+        // Clean up registry entries
+        this.registry.remove('gateSprite');
+        this.registry.remove('gateOpen');
+
+        // Stop all tweens and animations
+        this.tweens.killAll();
+        this.anims.pauseAll();
+
+        // Clear all delayed calls and events
+        this.time.removeAllEvents();
+
+        // Clean up input event listeners
+        this.input.off('pointerdown');
+        this.input.off('pointerover');
+        this.input.off('pointerout');
     }
 }

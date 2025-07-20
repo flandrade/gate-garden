@@ -1,3 +1,5 @@
+import { TEXT_STYLES } from '../utils/textConfig';
+
 export default class TitleScene extends Phaser.Scene {
     constructor() {
         super({ key: 'TitleScene' });
@@ -39,51 +41,19 @@ export default class TitleScene extends Phaser.Scene {
         }
 
         // Title text with ornate styling
-        const titleStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '72px',
-            fontFamily: 'Georgia, serif',
-            color: '#D2691E',
-            align: 'center',
-            shadow: {
-                offsetX: 3,
-                offsetY: 3,
-                color: '#000000',
-                blur: 8,
-                fill: true
-            }
-        };
-
+        const titleStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.title;
         const title = this.add.text(width/2, height/2 - 150, 'GATE GARDEN', titleStyle)
             .setOrigin(0.5);
 
         // Subtitle
-        const subtitleStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '28px',
-            fontFamily: 'Georgia, serif',
-            color: '#ffffff',
-            align: 'center'
-        };
-
+        const subtitleStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.subtitle;
         const subtitle = this.add.text(width/2, height/2 - 80,
             'A Gatekeeper\'s Tale', subtitleStyle)
             .setOrigin(0.5);
 
 
         // Animated start button
-        const buttonStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '32px',
-            fontFamily: 'Georgia, serif',
-            color: '#FFD700',
-            backgroundColor: '#8B4513',
-            padding: { x: 20, y: 10 },
-            shadow: {
-                offsetX: 2,
-                offsetY: 2,
-                color: '#000000',
-                blur: 5,
-                fill: true
-            }
-        };
+        const buttonStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.buttonStart;
 
         const startButton = this.add.text(width/2, height/2 + 120, 'START', buttonStyle)
             .setOrigin(0.5)
@@ -155,17 +125,9 @@ export default class TitleScene extends Phaser.Scene {
         // Add walking animals on the left side
         this.createWalkingAnimals();
 
-        // Credits
-        const creditsStyle: Phaser.Types.GameObjects.Text.TextStyle = {
-            fontSize: '12px',
-            fontFamily: 'Georgia, serif',
-            color: '#696969',
-            align: 'center'
-        };
-
         this.add.text(width/2, height - 30,
-            'Use WASD or Arrow Keys • Click to interact • Escape to pause',
-            creditsStyle).setOrigin(0.5);
+            'Click to interact • Escape to pause',
+            TEXT_STYLES.instructions).setOrigin(0.5);
     }
 
     private createMysticalParticles(): void {
@@ -262,5 +224,19 @@ export default class TitleScene extends Phaser.Scene {
         this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.start('GameScene');
         });
+    }
+
+    shutdown(): void {
+        // Clean up input listeners
+        this.input.removeAllListeners();
+
+        // Stop all tweens
+        this.tweens.killAll();
+
+        // Clear all time events
+        this.time.removeAllEvents();
+
+        // Clear any ongoing camera effects
+        this.cameras.main.resetFX();
     }
 }
