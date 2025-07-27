@@ -3,6 +3,46 @@ import { webhookService } from '../services/AgentService';
 import { TEXT_STYLES } from '../utils/textConfig';
 import { createDialogContainer } from '../utils/dialogs';
 
+const GAME_DIALOGS = {
+    INSTRUCTIONS: 'Collect medals to open the gate...',
+    GATE_OPEN: 'Gate is now open! Click to enter The Garden of Earthly Delights...',
+    GUARDIAN_LOADING: 'The Guardian is gathering wisdom...',
+    GUARDIAN_SILENT: 'The Guardian is silent for now...',
+    ANIMAL_LOADING: 'The animal is gathering thoughts...',
+    ANIMAL_SILENT: 'The animal is silent for now...',
+    GUARDIAN_INTRO: `Greetings, traveler...
+
+I am the Guardian of the Ancient Gate, keeper of this mystical passage between realms. The gate before you is sealed by ancient magic, bound by the wisdom of the sacred creatures that roam these grounds.
+
+To unlock the gate's secrets, you must seek counsel from the noble animals and earn their sacred medals by solving their mystical puzzles.
+
+The path to enlightenment awaits... prove yourself worthy.`,
+    GUARDIAN_ACCEPT: 'I accept the challenge',
+    GUARDIAN_SPEAKING: 'The Guardian speaks of ancient mysteries...',
+    ANIMAL_WISDOM: 'Click on the animals to seek their wisdom...',
+    UNICORN_COMPLETION: `The waters remember your triumph.
+
+You have already proven yourself worthy in the trial of falling truths.`,
+    UNICORN_THANKS: 'Thank you, wise unicorn',
+    UNICORN_REMEMBER: 'The unicorn remembers your completed trial...',
+    UNICORN_TRIAL: `The waters above whisper your trial.
+
+Will you gather what falls from the dreaming sky?`,
+    UNICORN_CATCH: 'Catch the falling truths',
+    UNICORN_NOT_YET: 'Not yet',
+    UNICORN_OFFERS: 'The unicorn offers a mystical trial...',
+    ELEPHANT_COMPLETION: `Memory eternal holds your achievement.
+
+You have already mastered the trial of hidden sight within The Garden of Earthly Delights.`,
+    ELEPHANT_THANKS: 'Thank you, wise elephant',
+    ELEPHANT_REMEMBER: 'The elephant remembers your completed trial...',
+    ELEPHANT_TRIAL: `Memory holds the key to all wisdom.
+
+Can you find what is hidden in plain sight?`,
+    ELEPHANT_TEST: 'Test my memory',
+    ELEPHANT_OFFERS: 'The elephant offers a trial of memory...'
+} as const;
+
 export default class GameScene extends Phaser.Scene {
     private meterPanel!: MeterPanel;
     private instructionText!: Phaser.GameObjects.Text;
@@ -243,7 +283,7 @@ export default class GameScene extends Phaser.Scene {
         const { width, height } = this.cameras.main;
 
         this.instructionText = this.add.text(width/2, height - 50,
-            'Collect medals to open the gate...', TEXT_STYLES.instructions);
+            GAME_DIALOGS.INSTRUCTIONS, TEXT_STYLES.instructions);
         this.instructionText.setOrigin(0.5);
     }
 
@@ -397,7 +437,7 @@ export default class GameScene extends Phaser.Scene {
             this,
             width/2, height/2,  // position
             600, 250,           // size
-            'The Guardian is gathering wisdom...', // initial loading text
+            GAME_DIALOGS.GUARDIAN_LOADING, // initial loading text
             [{
                 text: 'Close',
                 callback: () => this.closeConversation()
@@ -436,28 +476,20 @@ export default class GameScene extends Phaser.Scene {
         this.conversationActive = true;
         const { width, height } = this.cameras.main;
 
-        const introText = `Greetings, traveler...
-
-I am the Guardian of the Ancient Gate, keeper of this mystical passage between realms. The gate before you is sealed by ancient magic, bound by the wisdom of the sacred creatures that roam these grounds.
-
-To unlock the gate's secrets, you must seek counsel from the noble animals and earn their sacred medals by solving their mystical puzzles.
-
-The path to enlightenment awaits... prove yourself worthy.`;
-
         // Create the dialog container with the button as a child
         this.conversationBox = createDialogContainer(
             this,
             width/2, height/2,  // position
             650, 600,           // size
-            introText,          // text
+            GAME_DIALOGS.GUARDIAN_INTRO,          // text
             [{
-                text: 'I accept the challenge',
+                text: GAME_DIALOGS.GUARDIAN_ACCEPT,
                 callback: () => this.closeIntroduction()
             }]
         );
 
         // Update instruction text
-        this.instructionText.setText('The Guardian speaks of ancient mysteries...');
+        this.instructionText.setText(GAME_DIALOGS.GUARDIAN_SPEAKING);
     }
 
     private closeIntroduction(): void {
@@ -469,7 +501,7 @@ The path to enlightenment awaits... prove yourself worthy.`;
             onComplete: () => {
                 this.conversationBox.destroy();
                 this.conversationActive = false;
-                this.instructionText.setText('Click on the animals to seek their wisdom...');
+                this.instructionText.setText(GAME_DIALOGS.ANIMAL_WISDOM);
             }
         });
     }
@@ -492,7 +524,7 @@ The path to enlightenment awaits... prove yourself worthy.`;
                 return response.text;
             }
 
-        return "The Guardian is silent for now...";
+        return GAME_DIALOGS.GUARDIAN_SILENT;
     }
 
 
@@ -519,7 +551,7 @@ The path to enlightenment awaits... prove yourself worthy.`;
             this,
             width/2, height/2,  // position
             500, 250,           // size
-            `The ${animalType} is gathering thoughts...`, // initial loading text
+            GAME_DIALOGS.ANIMAL_LOADING.replace('animal', animalType), // initial loading text
             [{
                 text: 'Close',
                 callback: () => this.closeConversation()
@@ -548,47 +580,38 @@ The path to enlightenment awaits... prove yourself worthy.`;
         // Check if fish catching trial has already been completed
         if (window.GameUtils.hasShownFishCatching()) {
             // Show completion message instead
-            const completionText = `The waters remember your triumph.
-
-You have already proven yourself worthy in the trial of falling truths.`;
-
             this.conversationBox = createDialogContainer(
                 this,
                 width/2, height/2,  // position
                 600, 300,           // size
-                completionText,     // text
+                GAME_DIALOGS.UNICORN_COMPLETION,     // text
                 [{
-                    text: 'Thank you, wise unicorn',
+                    text: GAME_DIALOGS.UNICORN_THANKS,
                     callback: () => this.closeConversation()
                 }]
             );
 
-            this.instructionText.setText('The unicorn remembers your completed trial...');
+            this.instructionText.setText(GAME_DIALOGS.UNICORN_REMEMBER);
             return;
         }
-
-        // Mystical trial text
-        const trialText = `The waters above whisper your trial.
-
-Will you gather what falls from the dreaming sky?`;
 
         // Create the dialog container with buttons as children
         this.conversationBox = createDialogContainer(
             this,
             width/2, height/2,  // position
             600, 400,           // size
-            trialText,          // text
+            GAME_DIALOGS.UNICORN_TRIAL,          // text
             [{
-                text: 'Catch the falling truths',
+                text: GAME_DIALOGS.UNICORN_CATCH,
                 callback: () => this.startFishCatchingTrial()
             }, {
-                text: 'Not yet',
+                text: GAME_DIALOGS.UNICORN_NOT_YET,
                 callback: () => this.closeConversation()
             }]
         );
 
         // Update instruction text
-        this.instructionText.setText('The unicorn offers a mystical trial...');
+        this.instructionText.setText(GAME_DIALOGS.UNICORN_OFFERS);
     }
 
     private startFishCatchingTrial(): void {
@@ -619,47 +642,38 @@ Will you gather what falls from the dreaming sky?`;
         // Check if elephant search trial has already been completed
         if (window.GameUtils.hasShownElephantSearch()) {
             // Show completion message instead
-            const completionText = `Memory eternal holds your achievement.
-
-You have already mastered the trial of hidden sight within The Garden of Earthly Delights.`;
-
             this.conversationBox = createDialogContainer(
                 this,
                 width/2, height/2,  // position
                 600, 300,           // size
-                completionText,     // text
+                GAME_DIALOGS.ELEPHANT_COMPLETION,     // text
                 [{
-                    text: 'Thank you, wise elephant',
+                    text: GAME_DIALOGS.ELEPHANT_THANKS,
                     callback: () => this.closeConversation()
                 }]
             );
 
-            this.instructionText.setText('The elephant remembers your completed trial...');
+            this.instructionText.setText(GAME_DIALOGS.ELEPHANT_REMEMBER);
             return;
         }
-
-        // Memory trial text
-        const trialText = `Memory holds the key to all wisdom.
-
-Can you find what is hidden in plain sight?`;
 
         // Create the dialog container with buttons as children
         this.conversationBox = createDialogContainer(
             this,
             width/2, height/2,  // position
             600, 400,           // size
-            trialText,          // text
+            GAME_DIALOGS.ELEPHANT_TRIAL,          // text
             [{
-                text: 'Test my memory',
+                text: GAME_DIALOGS.ELEPHANT_TEST,
                 callback: () => this.startElephantSearchTrial()
             }, {
-                text: 'Not yet',
+                text: GAME_DIALOGS.UNICORN_NOT_YET,
                 callback: () => this.closeConversation()
             }]
         );
 
         // Update instruction text
-        this.instructionText.setText('The elephant offers a trial of memory...');
+        this.instructionText.setText(GAME_DIALOGS.ELEPHANT_OFFERS);
     }
 
     private startElephantSearchTrial(): void {
@@ -698,7 +712,7 @@ Can you find what is hidden in plain sight?`;
             return response.text;
         }
 
-        return "The animal is silent for now...";
+        return GAME_DIALOGS.ANIMAL_SILENT;
     }
 
     private endGame(): void {
@@ -719,9 +733,9 @@ Can you find what is hidden in plain sight?`;
 
         // Update instruction text
         if (canOpen) {
-            this.instructionText.setText('Gate is now open! Click to enter The Garden of Earthly Delights...');
+            this.instructionText.setText(GAME_DIALOGS.GATE_OPEN);
         } else {
-            this.instructionText.setText('Collect more medals to open the gate...');
+            this.instructionText.setText(GAME_DIALOGS.INSTRUCTIONS);
         }
     }
 

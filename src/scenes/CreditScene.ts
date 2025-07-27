@@ -1,5 +1,16 @@
 import { TEXT_COLORS, TEXT_STYLES } from '../utils/textConfig';
 
+const CREDIT_DIALOGS = {
+    CONGRATULATIONS: 'Congratulations!',
+    ACHIEVEMENT: 'You have earned the right to enter\nThe Garden of Earthly Delights',
+    DESCRIPTION: 'Through wisdom, patience, and skill, you have proven yourself worthy.\nThe ancient mysteries of the garden now await your discovery.',
+    CREDITS_HEADER: 'Credits',
+    AUTHOR: 'Created by Fernanda Andrade',
+    GITHUB: 'github.com/flandrade',
+    INSPIRATION: 'Game based on The Garden of Earthly Delights\nby Hieronymus Bosch',
+    CONTINUE_BUTTON: 'Press any key to return to the garden'
+} as const;
+
 export default class CreditScene extends Phaser.Scene {
     constructor() {
         super({ key: 'CreditScene' });
@@ -54,7 +65,7 @@ export default class CreditScene extends Phaser.Scene {
         const titleText = this.add.text(
             width/2,
             height * 0.15,
-            'Congratulations!',
+            CREDIT_DIALOGS.CONGRATULATIONS,
             TEXT_STYLES.title
         );
         titleText.setOrigin(0.5);
@@ -63,7 +74,7 @@ export default class CreditScene extends Phaser.Scene {
         const achievementText = this.add.text(
             width/2,
             height * 0.3,
-            'You have earned the right to enter\nThe Garden of Earthly Delights',
+            CREDIT_DIALOGS.ACHIEVEMENT,
             TEXT_STYLES.subtitle
         );
         achievementText.setOrigin(0.5);
@@ -72,7 +83,7 @@ export default class CreditScene extends Phaser.Scene {
         const descriptionText = this.add.text(
             width/2,
             height * 0.45,
-            'Through wisdom, patience, and skill, you have proven yourself worthy.\nThe ancient mysteries of the garden now await your discovery.',
+            CREDIT_DIALOGS.DESCRIPTION,
             TEXT_STYLES.dialogue
         );
         descriptionText.setOrigin(0.5);
@@ -114,7 +125,7 @@ export default class CreditScene extends Phaser.Scene {
         const creditsHeader = this.add.text(
             width/2,
             height * 0.65,
-            'Credits',
+            CREDIT_DIALOGS.CREDITS_HEADER,
             {
                 fontSize: '32px',
                 fontFamily: 'Georgia, serif',
@@ -129,7 +140,7 @@ export default class CreditScene extends Phaser.Scene {
         const authorText = this.add.text(
             width/2,
              height * 0.7,
-            'Created by Fernanda Andrade',
+            CREDIT_DIALOGS.AUTHOR,
             TEXT_STYLES.dialogue
         );
         authorText.setOrigin(0.5);
@@ -138,7 +149,7 @@ export default class CreditScene extends Phaser.Scene {
         const githubText = this.add.text(
             width/2,
             height * 0.73,
-            'github.com/flandrade',
+            CREDIT_DIALOGS.GITHUB,
             {
                 ...TEXT_STYLES.dialogue,
                 fontStyle: 'italic'
@@ -163,7 +174,7 @@ export default class CreditScene extends Phaser.Scene {
         const inspirationText = this.add.text(
             width/2,
             height * 0.83,
-            'Game based on The Garden of Earthly Delights\nby Hieronymus Bosch',
+            CREDIT_DIALOGS.INSPIRATION,
             TEXT_STYLES.dialogue
         );
         inspirationText.setOrigin(0.5);
@@ -187,7 +198,7 @@ export default class CreditScene extends Phaser.Scene {
         const buttonText = this.add.text(
             width/2,
             height * 0.95,
-            'Press any key to return to the garden',
+            CREDIT_DIALOGS.CONTINUE_BUTTON,
             TEXT_STYLES.instructions
         );
         buttonText.setOrigin(0.5);

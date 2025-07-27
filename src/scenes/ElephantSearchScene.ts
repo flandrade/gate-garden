@@ -2,6 +2,17 @@ import { TEXT_STYLES, TEXT_COLORS } from '../utils/textConfig';
 import { createDialogContainer } from '../utils/dialogs';
 import { spawningService, TargetPositionRequest } from '../services/SpawningService';
 
+const ELEPHANT_DIALOGS = {
+    FOUND_LABEL: 'Found: ',
+    TIME_LABEL: 'Time: ',
+    GUIDANCE: '"Memory recalls the Garden of Earthly Delights.\nSeek the mystical figures hidden within this ancient vision.\nPatience reveals what haste conceals."',
+    SUCCESS_TITLE: 'The elephant\'s memory holds all mysteries, as does yours.',
+    SUCCESS_MESSAGE: 'You found all {targets} mystical figures hidden within The Garden of Earthly Delights, seeing beyond the surface to discover the secrets within.',
+    MEDAL_EARNED: 'Medal Earned! 🥇',
+    FAILURE_TITLE: 'Time flows like a river through the garden, and this moment has passed.',
+    FAILURE_MESSAGE: 'You found {found} of {targets} mystical figures from The Garden of Earthly Delights. The elephant encourages you to look again with eyes of wonder.',
+    RETURN_BUTTON: 'Return to Garden'
+} as const;
 
 export default class ElephantSearchScene extends Phaser.Scene {
     private elephant!: Phaser.GameObjects.Sprite;
@@ -255,10 +266,10 @@ export default class ElephantSearchScene extends Phaser.Scene {
         const { width, height } = this.cameras.main;
 
         // Score display
-        this.scoreText = this.add.text(20, 20, `Found: 0 / ${this.targetsNeeded}`, TEXT_STYLES.gameLabel);
+        this.scoreText = this.add.text(20, 20, `${ELEPHANT_DIALOGS.FOUND_LABEL}0 / ${this.targetsNeeded}`, TEXT_STYLES.gameLabel);
 
         // Time display
-        this.timeText = this.add.text(width - 20, 20, `Time: ${this.timeLeft}`, TEXT_STYLES.gameLabel);
+        this.timeText = this.add.text(width - 20, 20, `${ELEPHANT_DIALOGS.TIME_LABEL}${this.timeLeft}`, TEXT_STYLES.gameLabel);
         this.timeText.setOrigin(1, 0);
 
         // Instructions
@@ -274,7 +285,7 @@ export default class ElephantSearchScene extends Phaser.Scene {
             this,
             this.elephant.x + 120, this.elephant.y - 180,  // position
             480, 200,                                       // size
-            `"Memory recalls the Garden of Earthly Delights.\nSeek the mystical figures hidden within this ancient vision.\nPatience reveals what haste conceals."`,  // guidance text
+            ELEPHANT_DIALOGS.GUIDANCE,  // guidance text
             undefined,                                      // no children
         );
 
@@ -300,7 +311,7 @@ export default class ElephantSearchScene extends Phaser.Scene {
                 if (!this.gameActive) return;
 
                 this.timeLeft--;
-                this.timeText.setText(`Time: ${this.timeLeft}`);
+                this.timeText.setText(`${ELEPHANT_DIALOGS.TIME_LABEL}${this.timeLeft}`);
 
                 if (this.timeLeft <= 0) {
                     this.endGame(false); // Time up - failure
@@ -341,7 +352,7 @@ export default class ElephantSearchScene extends Phaser.Scene {
         this.showFoundEffect(target.x, target.y);
 
         // Update score
-        this.scoreText.setText(`Found: ${this.score} / ${this.targetsNeeded}`);
+        this.scoreText.setText(`${ELEPHANT_DIALOGS.FOUND_LABEL}${this.score} / ${this.targetsNeeded}`);
 
         // Check victory condition
         if (this.score >= this.targetsNeeded) {
@@ -407,17 +418,17 @@ export default class ElephantSearchScene extends Phaser.Scene {
         let resultText: string;
 
         if (success) {
-            resultText = `The elephant's memory holds all mysteries, as does yours.
+            resultText = `${ELEPHANT_DIALOGS.SUCCESS_TITLE}
 
-You found all ${this.targetsNeeded} mystical figures hidden within The Garden of Earthly Delights, seeing beyond the surface to discover the secrets within.
+${ELEPHANT_DIALOGS.SUCCESS_MESSAGE.replace('{targets}', this.targetsNeeded.toString())}
 
-Medal Earned! 🥇
+${ELEPHANT_DIALOGS.MEDAL_EARNED}
 `;
             window.GameUtils.awardMedal('elephantSearch');
         } else {
-            resultText = `Time flows like a river through the garden, and this moment has passed.
+            resultText = `${ELEPHANT_DIALOGS.FAILURE_TITLE}
 
-You found ${this.score} of ${this.targetsNeeded} mystical figures from The Garden of Earthly Delights. The elephant encourages you to look again with eyes of wonder.`;
+${ELEPHANT_DIALOGS.FAILURE_MESSAGE.replace('{found}', this.score.toString()).replace('{targets}', this.targetsNeeded.toString())}`;
         }
 
         // Create the result dialog container
@@ -427,7 +438,7 @@ You found ${this.score} of ${this.targetsNeeded} mystical figures from The Garde
             680, 450,           // size
             resultText,         // result text
             [{
-                text: 'Return to Garden',
+                text: ELEPHANT_DIALOGS.RETURN_BUTTON,
                 callback: () => this.returnToGame()
             }],
             {

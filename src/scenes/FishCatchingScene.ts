@@ -2,6 +2,21 @@ import { TEXT_STYLES, TEXT_COLORS } from '../utils/textConfig';
 import { createDialogContainer } from '../utils/dialogs';
 import { spawningService, FishSpawnRequest, FishSpawnData } from '../services/SpawningService';
 
+const FISH_DIALOGS = {
+    SCORE_LABEL: 'Good Fish: ',
+    TIME_LABEL: 'Time: ',
+    INSTRUCTIONS: 'Move your mouse to guide the basket. Catch good fish, avoid bad ones!',
+    GUIDANCE: '"Catch the pure, avoid the tainted.\nLet your hands be wise."',
+    SUCCESS_TITLE: 'The water sings for you. Take this medal.',
+    SUCCESS_MESSAGE: 'You have caught {score} pure fish and proven yourself worthy of the unicorn\'s trust.',
+    MEDAL_EARNED: 'Medal Earned! 🥇',
+    TIME_UP_TITLE: 'The trial ends as the waters still whisper.',
+    TIME_UP_MESSAGE: 'You caught {score} pure fish, but more wisdom was needed. The streams flow on...',
+    FAILURE_TITLE: 'You\'ve touched the corrupted stream. The trial ends here.',
+    FAILURE_MESSAGE: 'The tainted fish carries darkness that clouds the waters. Your journey continues elsewhere.',
+    RETURN_BUTTON: 'Return to Garden'
+} as const;
+
 export default class FishCatchingScene extends Phaser.Scene {
     private unicorn!: Phaser.GameObjects.Sprite;
     private basket!: Phaser.GameObjects.Image;
@@ -179,15 +194,15 @@ export default class FishCatchingScene extends Phaser.Scene {
         const { width, height } = this.cameras.main;
 
         // Score display
-        this.scoreText = this.add.text(20, 20, 'Good Fish: 0 / ' + this.fishesNeeded, TEXT_STYLES.gameLabel);
+        this.scoreText = this.add.text(20, 20, FISH_DIALOGS.SCORE_LABEL + '0 / ' + this.fishesNeeded, TEXT_STYLES.gameLabel);
 
         // Time display
-        this.timeText = this.add.text(width - 20, 20, 'Time: ' + this.timeLeft, TEXT_STYLES.gameLabel);
+        this.timeText = this.add.text(width - 20, 20, FISH_DIALOGS.TIME_LABEL + this.timeLeft, TEXT_STYLES.gameLabel);
         this.timeText.setOrigin(1, 0);
 
         // Instructions
         this.instructionText = this.add.text(width/2, height - 30,
-            'Move your mouse to guide the basket. Catch good fish, avoid bad ones!',
+            FISH_DIALOGS.INSTRUCTIONS,
             TEXT_STYLES.instructions,
 
         );
@@ -200,7 +215,7 @@ export default class FishCatchingScene extends Phaser.Scene {
             this,
             this.unicorn.x + 100, this.unicorn.y - 150,  // position
             400, 150,                                     // size
-            '"Catch the pure, avoid the tainted.\nLet your hands be wise."',  // guidance text
+            FISH_DIALOGS.GUIDANCE,  // guidance text
             undefined,                                    // no children
         );
 
@@ -297,7 +312,7 @@ export default class FishCatchingScene extends Phaser.Scene {
             callback: () => {
 
                 this.timeLeft--;
-                this.timeText.setText('Time: ' + this.timeLeft);
+                this.timeText.setText(FISH_DIALOGS.TIME_LABEL + this.timeLeft);
 
                 if (this.timeLeft % 5 === 0 && this.fishSpeed < this.maxFishSpeed) {
                     this.fishSpeed += 20;
@@ -339,7 +354,7 @@ export default class FishCatchingScene extends Phaser.Scene {
         if (isGood) {
             // Caught a good fish - excellent!
             this.score++;
-            this.scoreText.setText('Good Fish: ' + this.score + ' / ' + this.fishesNeeded);
+            this.scoreText.setText(FISH_DIALOGS.SCORE_LABEL + this.score + ' / ' + this.fishesNeeded);
 
             // Victory condition
             if (this.score >= this.fishesNeeded) {
@@ -403,22 +418,22 @@ export default class FishCatchingScene extends Phaser.Scene {
 
         if (success) {
             if (this.score >= this.fishesNeeded) {
-                resultText = `The water sings for you. Take this medal.
+                resultText = `${FISH_DIALOGS.SUCCESS_TITLE}
 
-You have caught ${this.score} pure fish and proven yourself worthy of the unicorn's trust.
+${FISH_DIALOGS.SUCCESS_MESSAGE.replace('{score}', this.score.toString())}
 
-Medal Earned! 🥇
+${FISH_DIALOGS.MEDAL_EARNED}
 `;
                 window.GameUtils.awardMedal('fishCatching');
             } else {
-                resultText = `The trial ends as the waters still whisper.
+                resultText = `${FISH_DIALOGS.TIME_UP_TITLE}
 
-You caught ${this.score} pure fish, but more wisdom was needed. The streams flow on...`;
+${FISH_DIALOGS.TIME_UP_MESSAGE.replace('{score}', this.score.toString())}`;
             }
         } else {
-            resultText = `You've touched the corrupted stream. The trial ends here.
+            resultText = `${FISH_DIALOGS.FAILURE_TITLE}
 
-The tainted fish carries darkness that clouds the waters. Your journey continues elsewhere.`;
+${FISH_DIALOGS.FAILURE_MESSAGE}`;
         }
 
         // Create the result dialog container
@@ -428,7 +443,7 @@ The tainted fish carries darkness that clouds the waters. Your journey continues
             600, 400,           // size
             resultText,         // result text
             [{
-                text: 'Return to Garden',
+                text: FISH_DIALOGS.RETURN_BUTTON,
                 callback: () => this.returnToGame()
             }],           // children (medal text and continue button)
             {

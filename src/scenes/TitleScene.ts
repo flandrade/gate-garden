@@ -1,5 +1,12 @@
 import { TEXT_STYLES } from '../utils/textConfig';
 
+const TITLE_DIALOGS = {
+    TITLE: 'GATE GARDEN',
+    SUBTITLE: 'A Gatekeeper\'s Tale',
+    START_BUTTON: 'START',
+    INSTRUCTIONS: 'Click to interact • Escape to pause'
+} as const;
+
 export default class TitleScene extends Phaser.Scene {
     constructor() {
         super({ key: 'TitleScene' });
@@ -34,17 +41,17 @@ export default class TitleScene extends Phaser.Scene {
         }
 
         const titleStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.title;
-        const title = this.add.text(width/2, height/2 - 150, 'GATE GARDEN', titleStyle)
+        const title = this.add.text(width/2, height/2 - 150, TITLE_DIALOGS.TITLE, titleStyle)
             .setOrigin(0.5);
 
         const subtitleStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.subtitle;
         const subtitle = this.add.text(width/2, height/2 - 80,
-            'A Gatekeeper\'s Tale', subtitleStyle)
+            TITLE_DIALOGS.SUBTITLE, subtitleStyle)
             .setOrigin(0.5);
 
         const buttonStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.buttonStart;
 
-        const startButton = this.add.text(width/2, height/2 + 120, 'START', buttonStyle)
+        const startButton = this.add.text(width/2, height/2 + 120, TITLE_DIALOGS.START_BUTTON, buttonStyle)
             .setOrigin(0.5)
             .setInteractive({ useHandCursor: true })
             .on('pointerdown', () => this.startGame())
@@ -113,7 +120,7 @@ export default class TitleScene extends Phaser.Scene {
         this.createWalkingAnimals();
 
         this.add.text(width/2, height - 30,
-            'Click to interact • Escape to pause',
+            TITLE_DIALOGS.INSTRUCTIONS,
             TEXT_STYLES.instructions).setOrigin(0.5);
     }
 

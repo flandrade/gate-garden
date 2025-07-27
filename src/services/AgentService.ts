@@ -95,29 +95,29 @@ export class WebhookService {
                 "Listen to the whispers of the ancient ones. They guide those who seek true balance."
             ],
             unicorn: [
-                "The unicorn's horn glows with ancient magic. 'Trust your instincts, Gatekeeper.'",
-                "The unicorn's eyes shimmer with otherworldly wisdom. 'Magic flows where trust and stability meet.'",
-                "The unicorn's mane sparkles like starlight. 'I sense great potential in your realm, Gatekeeper.'"
+                "Trust your instincts.",
+                "Magic flows where trust and stability meet.",
+                "I sense great potential in your realm."
             ],
             elephant: [
-                "The elephant's deep voice rumbles like distant thunder. 'Strength comes not from force, but from wisdom.'",
-                "The elephant's wise eyes study you carefully. 'Stability is built on foundations of trust and support.'",
-                "The elephant's trunk sways thoughtfully. 'The health of the realm reflects the health of its people.'"
+                "Strength comes not from force, but from wisdom.",
+                "Stability is built on foundations of trust and support.",
+                "The health of the realm reflects the health of its people."
             ],
             giraffe: [
-                "The giraffe's long neck reaches toward the sky. 'Look beyond the immediate, Gatekeeper.'",
-                "The giraffe's gentle eyes survey the horizon. 'Support flows like water through the land.'",
-                "The giraffe's graceful movements speak of patience. 'Time is your ally, Gatekeeper.'"
+                "Look beyond the immediate.",
+                "Support flows like water through the land.",
+                "Time is your ally."
             ],
             rabbit: [
-                "The rabbit's nose twitches with nervous energy. 'Quick decisions can save lives, Gatekeeper.'",
-                "The rabbit's ears perk up at distant sounds. 'I hear whispers of change in the wind.'",
-                "The rabbit hops about excitedly. 'Health and happiness go hand in hand, Gatekeeper.'"
+                "Quick decisions can save lives.",
+                "I hear whispers of change in the wind.",
+                "Health and happiness go hand in hand."
             ],
             dog: [
-                "The dog's loyal eyes show unwavering devotion. 'Loyalty is earned through trust and fairness.'",
-                "The dog's wagging tail speaks of optimism. 'Even in dark times, hope remains.'",
-                "The dog's protective stance shows concern. 'Guard your realm well, Gatekeeper.'"
+                "Loyalty is earned through trust and fairness.",
+                "Even in dark times, hope remains.",
+                "Guard your realm well."
             ]
         };
 
