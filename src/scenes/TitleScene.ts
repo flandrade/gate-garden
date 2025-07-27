@@ -6,53 +6,42 @@ export default class TitleScene extends Phaser.Scene {
     }
 
         preload(): void {
-        // Load the main background image
         this.load.image('main_background', 'assets/backgrounds/main.jpg');
 
-        // Load animal sprites for walking animations
         this.load.image('rabbit_1', 'assets/animals/rabbit-1.png');
         this.load.image('rabbit_2', 'assets/animals/rabbit-2.png');
         this.load.image('elephant_1', 'assets/animals/elephant-1.png');
         this.load.image('elephant_2', 'assets/animals/elephant-2.png');
 
-        // Log if image fails to load (fallback handled in create())
         this.load.on('loaderror', (file: any) => {
             if (file.key === 'main_background') {
                 console.log('Background image not found, using fallback gradient');
             }
         });
-
     }
 
     create(): void {
         const { width, height } = this.cameras.main;
 
-        // Add the main background image
         if (this.textures.exists('main_background')) {
             const bg = this.add.image(width/2, height/2, 'main_background');
-            // Scale the background to cover the screen while maintaining aspect ratio
             const scaleX = width / bg.width;
             const scaleY = height / bg.height;
             const scale = Math.max(scaleX, scaleY);
             bg.setScale(scale);
 
-            // Add a subtle overlay to make text more readable
             this.add.rectangle(width/2, height/2, width, height, 0x000000, 0.3);
         }
 
-        // Title text with ornate styling
         const titleStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.title;
         const title = this.add.text(width/2, height/2 - 150, 'GATE GARDEN', titleStyle)
             .setOrigin(0.5);
 
-        // Subtitle
         const subtitleStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.subtitle;
         const subtitle = this.add.text(width/2, height/2 - 80,
             'A Gatekeeper\'s Tale', subtitleStyle)
             .setOrigin(0.5);
 
-
-        // Animated start button
         const buttonStyle: Phaser.Types.GameObjects.Text.TextStyle = TEXT_STYLES.buttonStart;
 
         const startButton = this.add.text(width/2, height/2 + 120, 'START', buttonStyle)
@@ -81,7 +70,6 @@ export default class TitleScene extends Phaser.Scene {
             });
         startButton.setDepth(100);
 
-        // Enhanced pulsing glow effect for title
         this.tweens.add({
             targets: title,
             alpha: 0.6,
@@ -91,7 +79,6 @@ export default class TitleScene extends Phaser.Scene {
             ease: 'Sine.easeInOut'
         });
 
-        // Add a glowing background behind the title
         const titleGlow = this.add.circle(width/2, height/2 - 150, 200, 0xFFD700, 0.1);
         titleGlow.setDepth(-1);
         this.tweens.add({
@@ -227,16 +214,9 @@ export default class TitleScene extends Phaser.Scene {
     }
 
     shutdown(): void {
-        // Clean up input listeners
         this.input.removeAllListeners();
-
-        // Stop all tweens
         this.tweens.killAll();
-
-        // Clear all time events
         this.time.removeAllEvents();
-
-        // Clear any ongoing camera effects
         this.cameras.main.resetFX();
     }
 }

@@ -22,7 +22,6 @@ export interface GameParameters {
     };
 }
 
-// Interfaces for spawning and positioning requests
 export interface FishSpawnRequest {
     screenDimensions: {
         width: number;
@@ -122,7 +121,6 @@ export class SpawningService {
         }
     }
 
-        // Generate fish spawning pattern via webhook
     async generateFishSpawn(request: FishSpawnRequest): Promise<FishSpawnResponse> {
         if (!isWebhookEnabled()) {
             return this.getFallbackFishSpawn(request);
@@ -134,7 +132,6 @@ export class SpawningService {
                 return this.getFallbackFishSpawn(request);
             }
 
-            // Build query parameters for GET request
             const params = new URLSearchParams({
                 action: 'fish_spawn',
                 screenWidth: request.screenDimensions.width.toString(),
@@ -161,7 +158,6 @@ export class SpawningService {
         }
     }
 
-        // Generate target positioning via webhook
     async generateTargetPositions(request: TargetPositionRequest): Promise<TargetPositionResponse> {
         if (!isWebhookEnabled()) {
             return this.getFallbackTargetPositions(request);
@@ -202,7 +198,6 @@ export class SpawningService {
         }
     }
 
-    // Fallback fish spawning logic (client-side fallback)
     private getFallbackFishSpawn(request: FishSpawnRequest): FishSpawnResponse {
 
         const { width } = request.screenDimensions;
@@ -212,7 +207,7 @@ export class SpawningService {
         const fishes: FishSpawnData[] = [];
 
         // Generate a reasonable number of fishes (enough to ensure we get the needed good fishes)
-        const totalFishesToGenerate = fishesNeeded * 10; // Generate 3x the needed amount to account for bad fishes
+        const totalFishesToGenerate = fishesNeeded * 10;
 
         for (let i = 0; i < totalFishesToGenerate; i++) {
             // 70% chance for good fish, 30% for bad fish
@@ -287,9 +282,7 @@ export class SpawningService {
         };
     }
 
-    // Parse webhook response for fish spawning
     private parseFishSpawnResponse(data: any, request: FishSpawnRequest): FishSpawnResponse {
-        // Expect direct JSON response with spawning parameters
         if (data && typeof data === 'object' && data.fishes && Array.isArray(data.fishes)) {
             return {
                 items: data.items,
@@ -297,13 +290,10 @@ export class SpawningService {
             };
         }
 
-        // Fallback if response format is unexpected
         return this.getFallbackFishSpawn(request);
     }
 
-    // Parse webhook response for target positioning
     private parseTargetPositionResponse(data: any, request: TargetPositionRequest): TargetPositionResponse {
-        // Expect direct JSON response with positioning parameters
         if (data && typeof data === 'object' && data.positions && Array.isArray(data.positions)) {
             return {
                 items: data.items,
@@ -311,26 +301,12 @@ export class SpawningService {
             };
         }
 
-        // Fallback if response format is unexpected
         return this.getFallbackTargetPositions(request);
-    }
-
-
-
-    // Calculate difficulty based on game state
-    calculateDifficulty(gameState: { score: number, fishesNeeded: number }, timeLeft: number, maxTime: number): number {
-        const timeProgress = 1 - (timeLeft / maxTime);
-        const scoreProgress = gameState.score / gameState.fishesNeeded;
-
-        // Difficulty increases with time and decreases with score
-        return Math.min(1, Math.max(0, timeProgress - (scoreProgress * 0.3)));
     }
 }
 
-// Global spawning service instance
 export const spawningService = new SpawningService();
 
-// Initialize with global access
 if (typeof window !== 'undefined') {
     (window as any).spawningService = spawningService;
 }

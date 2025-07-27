@@ -25,7 +25,6 @@ export default class ElephantSearchScene extends Phaser.Scene {
     }
 
     preload(): void {
-        // Load the Garden of Earthly Delights puzzle images
         this.load.image('puzzle-background', 'assets/puzzle/board.png');
         this.load.image('animal-2', 'assets/puzzle/animal-2.png');
         this.load.image('person-blue', 'assets/puzzle/person-blue.png');
@@ -41,37 +40,22 @@ export default class ElephantSearchScene extends Phaser.Scene {
 
         this.timeLeft = gameParameters.puzzle.timeLimit;
         this.targetsNeeded = gameParameters.puzzle.targetsNeeded;
-        // Reset game state
         this.score = 0;
         this.gameActive = true;
         this.foundItems.clear();
 
-        // Create the same background as FishCatchingScene
         this.createBackground();
-
-        // Create the elephant on the left side
         this.createElephant();
-
-        // Create the search board
         this.createSearchBoard();
-
-        // Create UI elements
         this.createUI();
-
-        // Show initial guidance from elephant
         this.showElephantGuidance();
-
-        // Start countdown timer
         this.startTimer();
-
-        // Fade in effect
         this.cameras.main.fadeIn(500, 0, 0, 0);
     }
 
     private createBackground(): void {
         const { width, height } = this.cameras.main;
 
-        // Same background as FishCatchingScene
         if (this.textures.exists('main_background')) {
             const bg = this.add.image(width/2, height/2, 'main_background');
             const scaleX = width / bg.width;
@@ -286,7 +270,6 @@ export default class ElephantSearchScene extends Phaser.Scene {
     }
 
     private showElephantGuidance(): void {
-        // Create the guidance tooltip using dialog container
         this.tooltip = createDialogContainer(
             this,
             this.elephant.x + 120, this.elephant.y - 180,  // position

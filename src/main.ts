@@ -5,29 +5,26 @@ import FishCatchingScene from './scenes/FishCatchingScene';
 import ElephantSearchScene from './scenes/ElephantSearchScene';
 import CreditScene from './scenes/CreditScene';
 
-// Game state interface
 interface GameState {
-    medals: number; // 0-3 medals earned from puzzles
+    medals: number;
     gameOver: boolean;
     gameResult: string | null;
-    guardianIntroductionShown: boolean; // Track if guardian intro has been shown
-    elephantSearchShown: boolean; // Track if elephant search has been shown
-    fishCatchingShown: boolean; // Track if fish catching has been shown
-    lastKnownMedals: number; // Track previous medal count for animation detection
+    guardianIntroductionShown: boolean;
+    elephantSearchShown: boolean;
+    fishCatchingShown: boolean;
+    lastKnownMedals: number;
 }
 
-// Utility functions interface
 interface GameUtils {
-    awardMedal(meterName: 'elephantSearch' | 'fishCatching'): boolean; // Returns true if medal was awarded
+    awardMedal(meterName: 'elephantSearch' | 'fishCatching'): boolean;
     resetMedals(): void;
-    canOpenGate(): boolean; // Returns true if user has 2+ medals
+    canOpenGate(): boolean;
     getGameOverReason(meterName: string): string;
     resetGame(): void;
     hasShownElephantSearch(): boolean;
     hasShownFishCatching(): boolean;
 }
 
-// Game configuration
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: 1536,
@@ -48,12 +45,10 @@ const config: Phaser.Types.Core.GameConfig = {
     }
 };
 
-// Initialize the game
 const game = new Phaser.Game(config);
 
-// Global game state management
 const gameState: GameState = {
-    medals: 0, // Start with 0 medals
+    medals: 0,
     gameOver: false,
     gameResult: null,
     guardianIntroductionShown: false,
@@ -62,9 +57,7 @@ const gameState: GameState = {
     lastKnownMedals: 0
 };
 
-// Utility functions for game state
 const gameUtils: GameUtils = {
-    // Award a medal for completing a puzzle (max 3 medals)
     awardMedal(meterName: 'elephantSearch' | 'fishCatching'): boolean {
         if (gameState.medals < 3) {
             gameState.medals++;
@@ -73,32 +66,27 @@ const gameUtils: GameUtils = {
             } else if (meterName === 'fishCatching') {
                 gameState.fishCatchingShown = true;
             }
-            return true; // Medal was awarded
+            return true;
         }
-        return false; // Already at max medals
+        return false;
     },
 
-    // Reset medals to 0
     resetMedals(): void {
         gameState.medals = 0;
     },
 
-    // Check if user has enough medals to open the gate
     canOpenGate(): boolean {
         return gameState.medals >= 2;
     },
 
-    // Check if elephant search has been shown
     hasShownElephantSearch(): boolean {
         return gameState.elephantSearchShown;
     },
 
-    // Check if fish catching has been shown
     hasShownFishCatching(): boolean {
         return gameState.fishCatchingShown;
     },
 
-    // Determine game over reason based on which meter hit zero
     getGameOverReason(meterName: string): string {
         switch(meterName) {
             case 'medals': return 'medals';
@@ -106,7 +94,6 @@ const gameUtils: GameUtils = {
         }
     },
 
-    // Reset game state
     resetGame(): void {
         gameState.medals = 0;
         gameState.gameOver = false;
@@ -118,7 +105,6 @@ const gameUtils: GameUtils = {
     }
 };
 
-// Make available globally (for backward compatibility with existing code)
 declare global {
     interface Window {
         GameState: GameState;

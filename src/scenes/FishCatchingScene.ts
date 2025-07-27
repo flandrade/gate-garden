@@ -24,18 +24,15 @@ export default class FishCatchingScene extends Phaser.Scene {
     }
 
     preload(): void {
-        // Load the actual fish assets
         this.load.image('fish_good', 'assets/animals/fish-good.png');
         this.load.image('fish_bad', 'assets/animals/fish-bad.png');
 
-        // Create basket texture
         this.createBasketTexture();
     }
 
     async create(): Promise<void> {
         const gameParameters = await spawningService.getGameParameters();
 
-        // Reset game state
         this.score = 0;
         this.timeLeft = gameParameters.fish.timeLimit;
         this.gameActive = true;
@@ -44,46 +41,29 @@ export default class FishCatchingScene extends Phaser.Scene {
         this.fishesNeeded = gameParameters.fish.fishesNeeded;
         this.fishes = [];
 
-        const { width, height } = this.cameras.main;
+        const { width } = this.cameras.main;
 
-        // Create the same background as GameScene
         this.createBackground();
-
-        // Create the unicorn on the left side
         this.createUnicorn();
-
-        // Create the player's basket
         this.createBasket();
-
-        // Create UI elements
         this.createUI();
-
-        // Show initial tooltip from unicorn
         this.showUnicornGuidance();
-
-        // Start fish spawning after a brief delay
         this.time.delayedCall(3000, () => {
             this.startFishSpawning();
         });
 
-        // Start countdown timer
         this.startTimer();
-
-        // Enable mouse/pointer input for basket movement
         this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
             if (this.gameActive && this.basket) {
                 this.basket.x = Phaser.Math.Clamp(pointer.x, 50, width - 50);
             }
         });
-
-        // Fade in effect
         this.cameras.main.fadeIn(500, 0, 0, 0);
     }
 
     private createBackground(): void {
         const { width, height } = this.cameras.main;
 
-        // Same background as GameScene
         if (this.textures.exists('main_background')) {
             const bg = this.add.image(width/2, height/2, 'main_background');
             const scaleX = width / bg.width;
@@ -242,7 +222,6 @@ export default class FishCatchingScene extends Phaser.Scene {
     private startFishSpawning(): void {
         if (!this.gameActive) return;
 
-        // Get all fish spawn data at once
         this.generateAllFishSpawns().catch(error => {
             console.error('Error generating fish spawns:', error);
         });
@@ -253,7 +232,6 @@ export default class FishCatchingScene extends Phaser.Scene {
 
         const { width, height } = this.cameras.main;
 
-        // Create spawn request for webhook service
         const spawnRequest: FishSpawnRequest = {
             screenDimensions: {
                 width,
@@ -261,9 +239,7 @@ export default class FishCatchingScene extends Phaser.Scene {
             },
         };
 
-        // Get all spawn parameters from webhook service
         const spawnResponse = await spawningService.generateFishSpawn(spawnRequest);
-
         if (!spawnResponse.success) {
             console.warn('Failed to get spawn parameters, using fallback');
             return;
@@ -319,20 +295,16 @@ export default class FishCatchingScene extends Phaser.Scene {
         this.countdownTimer = this.time.addEvent({
             delay: 1000,
             callback: () => {
-                if (!this.gameActive) return; // Don't continue if game already ended
 
                 this.timeLeft--;
                 this.timeText.setText('Time: ' + this.timeLeft);
 
-                // Increase difficulty over time
                 if (this.timeLeft % 5 === 0 && this.fishSpeed < this.maxFishSpeed) {
                     this.fishSpeed += 20;
-                    // Note: Difficulty is now handled in the initial fish generation
-                    // No need to restart spawning timer since all fishes are pre-scheduled
                 }
 
                 if (this.timeLeft <= 0) {
-                    this.endGame(true); // Time up - success if no red fish caught
+                    this.endGame(true);
                 }
             },
             loop: true

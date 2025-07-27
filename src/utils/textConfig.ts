@@ -1,9 +1,5 @@
-// Text style configurations for the game
-
-// Base font family used throughout the game
 export const BASE_FONT_FAMILY = 'Georgia, serif';
 
-// Color constants for easy reference
 export const TEXT_COLORS = {
   gold: '#CD853F',
   goldLight: '#FFD700',
@@ -18,10 +14,8 @@ export const TEXT_COLORS = {
   title: '#D2691E',
 } as const;
 
-// Common text styles used across scenes
 export const TEXT_STYLES = {
-  // Title text (large, golden)
-  title: {
+    title: {
     fontSize: '72px',
     fontFamily: BASE_FONT_FAMILY,
     color: TEXT_COLORS.title,
@@ -34,10 +28,9 @@ export const TEXT_STYLES = {
       blur: 8,
       fill: true
     }
-  },
+      },
 
-  // Subtitle text
-  subtitle: {
+    subtitle: {
     fontSize: '36px',
     fontFamily: 'Georgia, serif',
     color: TEXT_COLORS.skyBlue,
@@ -45,10 +38,9 @@ export const TEXT_STYLES = {
     align: 'center',
     stroke: '#000000',
     strokeThickness: 2
-  },
+      },
 
-  // Button text
-  buttonStart: {
+    buttonStart: {
     fontSize: '32px',
     fontFamily: BASE_FONT_FAMILY,
     color: TEXT_COLORS.goldLight,
@@ -63,8 +55,6 @@ export const TEXT_STYLES = {
     }
   },
 
-
-  // Medium button text
   mediumButton: {
     fontSize: '22px',
     fontFamily: BASE_FONT_FAMILY,
@@ -83,7 +73,6 @@ export const TEXT_STYLES = {
     padding: { x: 20, y: 15 }
   },
 
-  // Instructions text
   instructions: {
     fontSize: '20px',
     fontFamily: BASE_FONT_FAMILY,
@@ -93,7 +82,6 @@ export const TEXT_STYLES = {
     padding: { x: 20, y: 15 }
   },
 
-  // Dialogue text
   dialogue: {
     fontSize: '22px',
     fontFamily: BASE_FONT_FAMILY,
@@ -102,7 +90,6 @@ export const TEXT_STYLES = {
     lineSpacing: 8
   },
 
-  // Loading text
   loading: {
     fontSize: '18px',
     fontFamily: BASE_FONT_FAMILY,
@@ -117,8 +104,6 @@ export const TEXT_STYLES = {
     fontStyle: 'bold'
   },
 
-
-  // Celebration text
   celebration: {
     fontSize: '24px',
     fontFamily: BASE_FONT_FAMILY,

@@ -2,9 +2,6 @@ import {  isWebhookEnabled } from '../utils/webhookConfig';
 
 export let WEBHOOK_AGENT_URL: string | null = (import.meta as any).env.VITE_WEBHOOK_AGENT_URL || null;
 
-// Webhook Service for dynamic content generation
-// This service sends game state to webhook endpoints and receives dynamic responses
-
 export interface WebhookRequest {
     prompt: string;
     context: {
@@ -23,9 +20,8 @@ export interface WebhookResponse {
 }
 
 export class WebhookService {
-    private timeout: number = 5000; // 5 second timeout
+    private timeout: number = 5000;
 
-    // Generate dynamic conversation response via webhook
     async generateResponse(request: WebhookRequest): Promise<WebhookResponse> {
         if (!isWebhookEnabled()) {
             return this.getFallbackResponse(request);
@@ -43,7 +39,6 @@ export class WebhookService {
     private async callWebhook(request: WebhookRequest, webhookUrl: string | null = WEBHOOK_AGENT_URL): Promise<string> {
         if (!webhookUrl) throw new Error('No webhook URL provided');
 
-        // Prepare the payload to send to webhook
         const payload = {
             character: request.context.character,
             gameState: request.context.gameState,
@@ -52,7 +47,6 @@ export class WebhookService {
             requestId: this.generateRequestId()
         };
 
-        // Create AbortController for timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -74,7 +68,6 @@ export class WebhookService {
 
             const data = await response.json();
 
-            // Handle different response formats
             if (typeof data === 'string') {
                 return data;
             } else if (data.text || data.message || data.response) {
@@ -95,8 +88,6 @@ export class WebhookService {
     }
 
         private getFallbackResponse(request: WebhookRequest): WebhookResponse {
-        // Fallback responses when webhook is not available
-        const { medals } = request.context.gameState;
         const character = request.context.character;
 
         const fallbackMessages = {
@@ -139,7 +130,6 @@ export class WebhookService {
         };
     }
 
-    // Generate dynamic event descriptions
     async generateEventDescription(eventType: string, gameState: any): Promise<string> {
         const request: WebhookRequest = {
             prompt: `Generate a mystical description for a ${eventType} event in the realm.`,
@@ -153,7 +143,6 @@ export class WebhookService {
         return response.text;
     }
 
-    // Generate character-specific advice
     async generateCharacterAdvice(character: string, gameState: any, situation: string): Promise<string> {
         const request: WebhookRequest = {
             prompt: `Provide advice about: ${situation}`,
@@ -168,10 +157,8 @@ export class WebhookService {
     }
 }
 
-// Global webhook service instance
 export const webhookService = new WebhookService();
 
-// Initialize with webhook URL if available
 if (typeof window !== 'undefined') {
     (window as any).webhookService = webhookService;
 }

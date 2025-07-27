@@ -42,14 +42,12 @@ export default class GameScene extends Phaser.Scene {
         this.load.image('giraffe_1', 'assets/animals/giraffe-1.png');
         this.load.image('giraffe_2', 'assets/animals/giraffe-2.png');
 
-        // Log if image fails to load (fallback handled in create())
         this.load.on('loaderror', (file: any) => {
             if (file.key === 'main_background') {
                 console.log('Background image not found, using fallback gradient');
             }
         });
 
-        // Create placeholder textures for the game
         this.createPlaceholderTextures();
     }
 
@@ -60,28 +58,15 @@ export default class GameScene extends Phaser.Scene {
         this.conversationActive = false;
         this.interactiveAnimals = [];
 
-        // Ensure clean input state
         this.input.removeAllListeners();
-
-        // Create background
         this.createBackground();
-
-        // Create UI elements
         this.createUI();
 
-                // Create meter panel
         this.meterPanel = new MeterPanel(this, width - 120, 70);
 
-        // Update meter panel to reflect current game state
         this.meterPanel.updateMeters();
-
-        // Initialize gate state based on current medals
         this.updateGateState();
-
-                // Check for new medals and show celebration if needed
         this.checkForNewMedals();
-
-        // Fade in effect
         this.cameras.main.fadeIn(5, 0, 0, 0);
 
         // Start guardian introduction after fade in completes (only on first visit)
@@ -115,13 +100,8 @@ export default class GameScene extends Phaser.Scene {
             this.add.rectangle(width/2, height/2, width, height, 0x2c1810);
         }
 
-        // Add garden-like atmospheric elements
         this.createAtmosphericElements();
-
-        // Create the mystical gate
         this.createGate();
-
-        // Add walking animals on the left side
         this.createWalkingAnimals();
     }
 
@@ -256,7 +236,6 @@ export default class GameScene extends Phaser.Scene {
     }
 
     private createUI(): void {
-        // Instructions panel
         this.createInstructionsPanel();
     }
 
@@ -286,7 +265,6 @@ export default class GameScene extends Phaser.Scene {
         this.createWalkingAnimal('giraffe', leftSide + 350, height * 0.56, 0.5);
         this.createWalkingAnimal('elephant', leftSide + 300, height * 0.65, 1.5);
 
-        //this.createWalkingAnimal('dog', leftSide - 150, height * 0.7, 0.65);
 
         this.createWalkingAnimal('unicorn', leftSide - 200, height * 0.75, 0.8);
         this.createWalkingAnimal('rabbit', leftSide - 50, height * 0.80, 0.5);
@@ -426,29 +404,17 @@ export default class GameScene extends Phaser.Scene {
             }]
         );
 
-        // Generate guardian message asynchronously
-        try {
-            const message = await this.getGuardianMessage();
 
-            // Find and update the text in the container
-            const dialogText = this.conversationBox.list.find(child =>
-                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering wisdom')
-            ) as Phaser.GameObjects.Text;
+        const message = await this.getGuardianMessage();
+        const dialogText = this.conversationBox.list.find(child =>
+            child instanceof Phaser.GameObjects.Text && child.text.includes('gathering wisdom')
+        ) as Phaser.GameObjects.Text;
 
-            if (dialogText) {
-                dialogText.setText(message);
-                dialogText.setStyle(TEXT_STYLES.dialogue);
-            }
-        } catch (error) {
-            console.error('Failed to get guardian message:', error);
-            const dialogText = this.conversationBox.list.find(child =>
-                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering wisdom')
-            ) as Phaser.GameObjects.Text;
-
-            if (dialogText) {
-                dialogText.setText('The Guardian is silent for now...');
-            }
+        if (dialogText) {
+            dialogText.setText(message);
+            dialogText.setStyle(TEXT_STYLES.dialogue);
         }
+
     }
 
     private closeConversation(): void {
@@ -470,7 +436,6 @@ export default class GameScene extends Phaser.Scene {
         this.conversationActive = true;
         const { width, height } = this.cameras.main;
 
-        // Mystical introduction text
         const introText = `Greetings, traveler...
 
 I am the Guardian of the Ancient Gate, keeper of this mystical passage between realms. The gate before you is sealed by ancient magic, bound by the wisdom of the sacred creatures that roam these grounds.
@@ -561,29 +526,17 @@ The path to enlightenment awaits... prove yourself worthy.`;
             }]
         );
 
-        // Generate animal message asynchronously
-        try {
-            const message = await this.getAnimalMessage(animalType);
 
-            // Find and update the text in the container
-            const dialogText = this.conversationBox.list.find(child =>
-                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering thoughts')
-            ) as Phaser.GameObjects.Text;
+        const message = await this.getAnimalMessage(animalType);
+        const dialogText = this.conversationBox.list.find(child =>
+            child instanceof Phaser.GameObjects.Text && child.text.includes('gathering thoughts')
+        ) as Phaser.GameObjects.Text;
 
-            if (dialogText) {
-                dialogText.setText(message);
-                dialogText.setStyle(TEXT_STYLES.dialogue);
-            }
-        } catch (error) {
-            console.error('Failed to get animal message:', error);
-            const dialogText = this.conversationBox.list.find(child =>
-                child instanceof Phaser.GameObjects.Text && child.text.includes('gathering thoughts')
-            ) as Phaser.GameObjects.Text;
-
-            if (dialogText) {
-                dialogText.setText(`The ${animalType} is silent for now...`);
-            }
+        if (dialogText) {
+            dialogText.setText(message);
+            dialogText.setStyle(TEXT_STYLES.dialogue);
         }
+
     }
 
     private showUnicornTrialDialog(): void {
@@ -639,7 +592,6 @@ Will you gather what falls from the dreaming sky?`;
     }
 
     private startFishCatchingTrial(): void {
-        // Close the dialog
         this.tweens.add({
             targets: this.conversationBox,
             alpha: 0,
@@ -711,7 +663,6 @@ Can you find what is hidden in plain sight?`;
     }
 
     private startElephantSearchTrial(): void {
-        // Close the dialog
         this.tweens.add({
             targets: this.conversationBox,
             alpha: 0,
@@ -751,7 +702,6 @@ Can you find what is hidden in plain sight?`;
     }
 
     private endGame(): void {
-        // Fade out and transition to end scene
         this.cameras.main.fadeOut(1000, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => {
             this.scene.start('TitleScene');
@@ -759,7 +709,6 @@ Can you find what is hidden in plain sight?`;
     }
 
     update(): void {
-        // Update meter panel
         this.meterPanel.updateMeters();
     }
 
@@ -789,7 +738,6 @@ Can you find what is hidden in plain sight?`;
         }
     }
 
-            // Check for new medals when returning to GameScene
     private checkForNewMedals(): void {
         const currentMedals = window.GameState.medals;
         const lastKnownMedals = window.GameState.lastKnownMedals;
@@ -848,14 +796,11 @@ Can you find what is hidden in plain sight?`;
         this.registry.remove('gateSprite');
         this.registry.remove('gateOpen');
 
-        // Stop all tweens and animations
         this.tweens.killAll();
         this.anims.pauseAll();
 
-        // Clear all delayed calls and events
         this.time.removeAllEvents();
 
-        // Clean up input event listeners
         this.input.off('pointerdown');
         this.input.off('pointerover');
         this.input.off('pointerout');

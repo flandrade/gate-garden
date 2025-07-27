@@ -101,8 +101,6 @@ export default class MeterPanel {
     }
 
     animateMedalGain(newMedalCount: number): void {
-        const oldCount = Math.max(0, newMedalCount - 1);
-
         // Animate the new medal appearing
         if (newMedalCount > 0 && newMedalCount <= 3) {
             const medalIndex = newMedalCount - 1;
@@ -179,17 +177,14 @@ export default class MeterPanel {
         });
     }
 
-    // Check if gate should be open (2+ medals)
     canOpenGate(): boolean {
         return window.GameState.medals >= 2;
     }
 
-    // Get the container for positioning
     getContainer(): Phaser.GameObjects.Container {
         return this.container;
     }
 
-    // Destroy the meter panel
     destroy(): void {
         this.container.destroy();
     }

@@ -6,10 +6,8 @@ export default class CreditScene extends Phaser.Scene {
     }
 
     preload(): void {
-        // Load the credit background image
         this.load.image('credit_background', 'assets/backgrounds/credit.png');
 
-        // Fallback in case the image doesn't load
         this.load.on('loaderror', (file: any) => {
             if (file.key === 'credit_background') {
                 console.log('Credit background image not found, using fallback');
@@ -18,22 +16,11 @@ export default class CreditScene extends Phaser.Scene {
     }
 
     create(): void {
-        // Create background
         this.createBackground();
-
-        // Create the main congratulations text
         this.createCongratulatoryText();
-
-        // Create credits section
         this.createCreditsSection();
-
-        // Create continue button
         this.createContinueButton();
-
-        // Fade in effect
         this.cameras.main.fadeIn(1000, 0, 0, 0);
-
-        // Add some ambient particles for magic effect
         this.createMagicalParticles();
     }
 
@@ -269,16 +256,9 @@ export default class CreditScene extends Phaser.Scene {
     }
 
     shutdown(): void {
-        // Clean up input listeners
         this.input.removeAllListeners();
-
-        // Stop all tweens
         this.tweens.killAll();
-
-        // Clear all time events
         this.time.removeAllEvents();
-
-        // Clear any ongoing camera effects
         this.cameras.main.resetFX();
     }
 }
